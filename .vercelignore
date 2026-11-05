@@ -1,0 +1,7 @@
+analytics.json
+server.py
+.env
+.env.local
+.env.*
+!.env.example
+.git/

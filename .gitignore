@@ -1,0 +1,8 @@
+.DS_Store
+.vercel/
+node_modules/
+analytics.json
+.env
+.env.*
+!.env.example
+*.log
