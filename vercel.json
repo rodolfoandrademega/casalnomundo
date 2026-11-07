@@ -23,7 +23,7 @@
   "rewrites": [
     {
       "source": "/admin",
-      "destination": "/painel.html"
+      "destination": "/painel"
     }
   ],
   "redirects": [
