@@ -55,6 +55,15 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         route = urlparse(self.path).path
+        if route in ("/painel", "/painel.html", "/admin/"):
+            self.send_response(302)
+            self.send_header("Location", "/admin")
+            self.end_headers()
+            return
+        if route == "/admin":
+            self.path = "/painel.html"
+            super().do_GET()
+            return
         if route == "/api/config":
             self.send_json({
                 "supabaseUrl": os.environ.get("SUPABASE_URL", ""),
@@ -171,7 +180,7 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8000"))
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"Casal no Mundo local: http://127.0.0.1:{port}/painel.html", flush=True)
+    print(f"Casal no Mundo local: http://127.0.0.1:{port}/admin", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

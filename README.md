@@ -27,7 +27,7 @@ O conteúdo inicial é carregado do arquivo local como fallback. Entre no painel
    - `SUPABASE_PUBLISHABLE_KEY` — chave Publishable (ou `anon` antiga).
 3. Faça um novo deploy. A Vercel publica a página estática e a função Node em `api/config.js`.
 4. No Supabase, adicione o domínio Vercel em **Authentication → URL Configuration → Site URL / Redirect URLs**, por exemplo `https://seu-projeto.vercel.app/**`.
-5. Acesse `/painel` e entre com o usuário administrador.
+5. Acesse `/admin` e entre com o usuário administrador.
 
 Não configure `SUPABASE_SECRET_KEY` nem `service_role` neste projeto: o frontend usa a chave publicável e as políticas RLS limitam as operações.
 
@@ -53,7 +53,7 @@ Copie `.env.example` para `.env.local`, preencha as duas variáveis com a URL e 
 python3 server.py
 ```
 
-Abra `http://127.0.0.1:8000`. Sem credenciais, a página e o painel continuam funcionando em modo local; o servidor grava conteúdo em `conteudo.json` e métricas em `analytics.json` (ignorado pelo Git).
+Abra `http://127.0.0.1:8000` e acesse o painel em `http://127.0.0.1:8000/admin`. Sem credenciais, a página continua funcionando e o painel oferece “Abrir painel em modo local” em localhost; o servidor grava conteúdo em `conteudo.json` e métricas em `analytics.json` (ignorado pelo Git).
 
 ## Relatórios e privacidade
 
