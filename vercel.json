@@ -32,5 +32,6 @@
       "destination": "/admin",
       "permanent": true
     }
-  ]
+  ],
+  "trailingSlash": false
 }
