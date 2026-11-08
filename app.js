@@ -5,6 +5,22 @@
   const image = (src, alt, cls = '') => `<img${cls ? ` class="${esc(cls)}"` : ''} src="${esc(safeUrl(src))}" alt="${esc(alt || '')}" loading="lazy">`;
   const anchor = (url, content, cls = '', trackId = '', label = '') => `<a${cls ? ` class="${esc(cls)}"` : ''} href="${esc(safeUrl(url))}"${trackId ? ` data-track="${esc(trackId)}" data-label="${esc(label)}"` : ''} target="_blank" rel="noopener">${content}</a>`;
 
+  // Brand SVGs: Simple Icons (CC0), https://github.com/simple-icons/simple-icons
+  const socialIcons = {
+    "tiktok": "<svg viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z\"/></svg>",
+    "facebook": "<svg viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z\"/></svg>",
+    "airbnb": "<svg viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M12.001 18.275c-1.353-1.697-2.148-3.184-2.413-4.457-.263-1.027-.16-1.848.291-2.465.477-.71 1.188-1.056 2.121-1.056s1.643.345 2.12 1.063c.446.61.558 1.432.286 2.465-.291 1.298-1.085 2.785-2.412 4.458zm9.601 1.14c-.185 1.246-1.034 2.28-2.2 2.783-2.253.98-4.483-.583-6.392-2.704 3.157-3.951 3.74-7.028 2.385-9.018-.795-1.14-1.933-1.695-3.394-1.695-2.944 0-4.563 2.49-3.927 5.382.37 1.565 1.352 3.343 2.917 5.332-.98 1.085-1.91 1.856-2.732 2.333-.636.344-1.245.558-1.828.609-2.679.399-4.778-2.2-3.825-4.88.132-.345.395-.98.845-1.961l.025-.053c1.464-3.178 3.242-6.79 5.285-10.795l.053-.132.58-1.116c.45-.822.635-1.19 1.351-1.643.346-.21.77-.315 1.246-.315.954 0 1.698.558 2.016 1.007.158.239.345.557.582.953l.558 1.089.08.159c2.041 4.004 3.821 7.608 5.279 10.794l.026.025.533 1.22.318.764c.243.613.294 1.222.213 1.858zm1.22-2.39c-.186-.583-.505-1.271-.9-2.094v-.03c-1.889-4.006-3.642-7.608-5.307-10.844l-.111-.163C15.317 1.461 14.468 0 12.001 0c-2.44 0-3.476 1.695-4.535 3.898l-.081.16c-1.669 3.236-3.421 6.843-5.303 10.847v.053l-.559 1.22c-.21.504-.317.768-.345.847C-.172 20.74 2.611 24 5.98 24c.027 0 .132 0 .265-.027h.372c1.75-.213 3.554-1.325 5.384-3.317 1.829 1.989 3.635 3.104 5.382 3.317h.372c.133.027.239.027.265.027 3.37.003 6.152-3.261 4.802-6.975z\"/></svg>"
+};
+  const genericSocialIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m10 13 4-4m-6 7-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 1 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" transform="translate(1 1)"/></svg>';
+  function socialIcon(social) {
+    let host='';
+    try { host=new URL(social.url).hostname.toLowerCase(); } catch (_) {}
+    const domains={tiktok:['tiktok.com'],facebook:['facebook.com','fb.me'],airbnb:['airbnb.com','withairbnb.com']};
+    const platform=Object.keys(domains).find(name=>domains[name].some(domain=>host===domain||host.endsWith('.'+domain))) || String(social.label || '').trim().toLowerCase();
+    return '<span class="social-icon">'+(socialIcons[platform] || genericSocialIcon)+'</span>';
+  }
+  const socialArrow = '<svg class="social-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12 12 4M4 4h8v8"/></svg>';
+
   function render(d) {
     document.title = d.profile?.name || 'Casal no Mundo';
     const hero = document.querySelector('#hero');
@@ -20,7 +36,7 @@
     document.querySelector('#highlights').innerHTML = (d.highlights || []).map((h,i) => anchor(h.url, `${image(h.image, h.title)}<span class="highlight-copy"><span class="label">${esc(h.label || 'Destaque')}</span><strong>${esc(h.title || '')}</strong><span>${esc(h.description || '')}</span></span><span class="highlight-arrow" aria-hidden="true">↗</span>`, 'highlight', `highlight_${i}`, h.title)).join('');
 
     document.querySelector('#products').innerHTML = (d.products || (d.product ? [d.product] : [])).map((p,i) => `<article class="product">${image(p.image,p.title)}<div><h3>${esc(p.title || '')}</h3><p>${esc(p.description || '')}</p><div class="buy-links">${(p.links || []).map((l,j) => anchor(l.url, `${esc(l.label)} ↗`, '', `product_${i}_shop_${j}`, `${p.title} · ${l.label}`)).join('')}</div></div></article>`).join('');
-    document.querySelector('#socials').innerHTML = (d.socials || []).map((soc,i) => anchor(soc.url, `<b>${esc((soc.label || '').slice(0,1))}</b> ${esc(soc.label)} ↗`, 'social', `social_${i}`, soc.label)).join('');
+    document.querySelector('#socials').innerHTML = (d.socials || []).map((soc,i) => anchor(soc.url, `${socialIcon(soc)}<span class="social-label">${esc(soc.label)}</span>${socialArrow}`, 'social', `social_${i}`, soc.label)).join('');
     const contact = d.contact || {};
     document.querySelector('#contact').innerHTML = anchor(contact.url, `${esc(contact.label || 'Contato')} ↗`, 'contact', 'contact', contact.label);
   }
