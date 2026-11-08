@@ -130,3 +130,26 @@ node --test tests/megabio-analytics.test.cjs tests/promotion-observer.test.cjs
 ```
 
 Os testes de integração de DOM usam `JSDOM_MODULE=/caminho/node_modules/jsdom node --test tests/megabio-dashboard.test.cjs tests/panel-mobile.test.cjs`. Eles cobrem navegação, permissões, exposição qualificada, cliques, paginação, filtros, respostas sem dados e falhas da consulta.
+
+## Perfil, aparência e vídeo principal
+
+Em **Perfil e aparência**, edite separadamente o **nome exibido na MegaBio** e o **título da aba do navegador**. O título é salvo em `profile.siteTitle` e não acompanha mudanças em `profile.name`. Conteúdo antigo recebe o título padrão “Casal no Mundo” até que um título próprio seja salvo.
+
+A paleta fica em `profile.colors`: fundo, texto, destaque e fundo dos cartões. Há quatro combinações iniciais e seleção por cor ou código hexadecimal. **Restaurar cores padrão** volta à paleta original (`#ffffff`, `#171717`, `#f36b35`, `#ffffff`) sem alterar o nome, título ou capa. A prévia mostra as alterações em rascunho; elas só chegam à MegaBio após **Salvar alterações**. A personalização afeta a página pública, enquanto o painel mantém sua identidade de gestão.
+
+A capa oferece **Imagem** ou **Vídeo** (`profile.heroType`). `profile.image` permanece como foto/capa alternativa; o vídeo fica em `profile.video`. São aceitos MP4 e WebM até 25 MB. O vídeo público tem controles, usa a foto como apresentação, não inicia automaticamente e volta à foto se o navegador não conseguir carregá-lo.
+
+Os vídeos usam o bucket público `site-videos`, separado das imagens (que continuam limitadas a 5 MB). O servidor `/api/video-upload` valida o JWT e a permissão **Perfil**, então assina um caminho único em `videos/profile/`. O navegador envia o arquivo diretamente ao Supabase, evitando o limite de corpo da função da Vercel. A chave de servidor não é enviada ao navegador; só o token de um caminho de upload é retornado. Não há política pública de INSERT no bucket. Revogar a permissão bloqueia novas assinaturas e a publicação de alterações; assinaturas já emitidas seguem o prazo de validade do Supabase.
+
+O bucket já está configurado nesta instalação. Para um projeto novo, execute opcionalmente [`supabase/videos.sql`](supabase/videos.sql), mantendo a mesma `SUPABASE_SECRET_KEY` de servidor usada pelo cadastro. O endpoint de assinatura funciona na Vercel/`vercel dev`; sem Supabase, o servidor Python oferece upload local de vídeo em `/api/media`. Arquivos locais continuam ignorados pelo Git e pela Vercel.
+
+O link ao lado de **Sair** agora se chama **Visitar MegaBio** e continua apontando à página pública atual.
+
+Testes específicos:
+
+```sh
+node --test tests/profile-design.test.cjs tests/video-api.test.cjs tests/image-upload.test.cjs
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py'
+```
+
+A validação de DOM de prévia, título independente, restauração de paleta e comportamento mobile usa `JSDOM_MODULE=/caminho/node_modules/jsdom node --test tests/profile-design.test.cjs tests/panel-mobile.test.cjs tests/megabio-dashboard.test.cjs`.

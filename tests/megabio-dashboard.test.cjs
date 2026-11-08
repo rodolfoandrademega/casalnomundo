@@ -19,7 +19,7 @@ test('dashboard uses real counts, answers prompts, respects editing permissions 
 test('public page renders stable measured links and preserves existing visits and click events',{skip:!enabled},async()=>{
  const {JSDOM}=require(process.env.JSDOM_MODULE),dom=new JSDOM(fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),{runScripts:'outside-only',url:'https://example.com/'}),{window}=dom,sent=[];
  try{
-  for(const file of ['defaults.js','megabio-analytics.js','promotion-observer.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
+  for(const file of ['defaults.js','profile-design.js','megabio-analytics.js','promotion-observer.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
   window.CNM_SUPABASE_CLIENT={from(table){return {select(){return this},eq(){return this},maybeSingle:async()=>({data:{payload:window.CNM_DEFAULT_DATA}}),insert:async row=>{assert.equal(table,'site_events');sent.push(row);return {error:null}}}}};
   window.eval(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'));await new Promise(setImmediate);
   const links=[...window.document.querySelectorAll('[data-promotion]')];assert(links.length>0);assert(sent.some(event=>event.kind==='visit'));

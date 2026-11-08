@@ -1,9 +1,19 @@
 (() => {
   const MAX_BYTES = 5 * 1024 * 1024;
   const TYPES = {'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
-  async function validate(file) {
+  const MAX_VIDEO_BYTES=25*1024*1024;
+  const VIDEO_TYPES={'video/mp4':'mp4','video/webm':'webm'};
+  async function validate(file,{allowVideo=false}={}) {
     if (!file || !file.size) throw new Error('Escolha uma imagem que não esteja vazia.');
-    if (!TYPES[file.type]) throw new Error('Escolha uma imagem JPG, PNG, WebP ou GIF.');
+    const video=allowVideo&&Object.hasOwn(VIDEO_TYPES,file.type);
+    if(video){
+      if(file.size>MAX_VIDEO_BYTES)throw new Error('O vídeo deve ter no máximo 25 MB.');
+      const bytes=new Uint8Array(await file.slice(0,4096).arrayBuffer()),text=String.fromCharCode(...bytes);
+      const valid=file.type==='video/mp4'?text.slice(4,8)==='ftyp'&&['isom','iso2','iso3','iso4','iso5','iso6','avc1','mp41','mp42','M4V ','dash','cmfc','MSNV'].some(brand=>text.slice(8).includes(brand)):[26,69,223,163].every((byte,index)=>bytes[index]===byte)&&text.includes('webm');
+      if(!valid)throw new Error('O arquivo não corresponde a um vídeo MP4 ou WebM válido.');
+      return;
+    }
+    if (!Object.hasOwn(TYPES,file.type)) throw new Error('Escolha uma imagem JPG, PNG, WebP ou GIF.');
     if (file.size > MAX_BYTES) throw new Error('A imagem deve ter no máximo 5 MB.');
     const bytes = new Uint8Array(await file.slice(0, 16).arrayBuffer());
     const text = (start, end) => String.fromCharCode(...bytes.slice(start, end));
@@ -17,11 +27,23 @@
   }
   function previewUrl(value) {
     const url=String(value || '').trim();
-    return /^(https?:\/\/|\.?\.?\/)/i.test(url) || /^[\w-]+\.(jpe?g|png|webp|gif)$/i.test(url) ? url : '';
+    return /^(https?:\/\/|\.?\.?\/)/i.test(url) || /^[\w-]+\.(jpe?g|png|webp|gif|mp4|webm)$/i.test(url) ? url : '';
   }
-  async function upload(file, {client, admin, local=false, section=null}) {
-    await validate(file);
+  async function upload(file, {client, admin, local=false, section=null,allowVideo=false}) {
+    await validate(file,{allowVideo});
+    const video=Object.hasOwn(VIDEO_TYPES,file.type);
+    if(video&&section!=='profile')throw new Error('Vídeos podem ser enviados apenas para a capa do perfil.');
     if (client && admin) {
+      if(video){
+        const {data:{session}}=await client.auth.getSession();if(!session)throw new Error('Entre novamente para enviar o vídeo.');
+        const response=await fetch('/api/video-upload',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({mimeType:file.type,size:file.size})});
+        const signed=await response.json().catch(()=>({}));
+        if(!response.ok){if(response.status===404&&['localhost','127.0.0.1','[::1]'].includes(location.hostname))throw new Error('Abra o painel publicado da MegaBio para enviar o vídeo.');throw new Error(signed.error||'Não foi possível preparar o envio do vídeo.');}
+        const bucket=client.storage.from(signed.bucket);
+        const {error}=await bucket.uploadToSignedUrl(signed.path,signed.token,file,{contentType:file.type,cacheControl:'31536000'});
+        if(error)throw new Error('Não foi possível enviar o vídeo. Verifique a conexão e tente novamente.');
+        return bucket.getPublicUrl(signed.path).data.publicUrl;
+      }
       const folder=['profile','stay','destinations','products','highlights'].includes(section)?section+'/':'';
       const key=`images/${folder}${crypto.randomUUID()}.${TYPES[file.type]}`;
       const bucket=client.storage.from('site-images');
@@ -36,11 +58,11 @@
       return data.publicUrl;
     }
     if (local && !client && ['localhost','127.0.0.1','[::1]'].includes(location.hostname)) {
-      const response=await fetch('/api/uploads',{method:'POST',headers:{'Content-Type':file.type},body:file});
+      const response=await fetch(video?'/api/media':'/api/uploads',{method:'POST',headers:{'Content-Type':file.type},body:file});
       if (!response.ok) throw new Error('Não foi possível enviar. Confira se o servidor local está atualizado.');
       return (await response.json()).url;
     }
     throw new Error('Entre com uma conta de administrador para enviar imagens.');
   }
-  window.CNM_IMAGES={validate,upload,previewUrl,MAX_BYTES};
+  window.CNM_IMAGES={validate,upload,previewUrl,MAX_BYTES,MAX_VIDEO_BYTES};
 })();

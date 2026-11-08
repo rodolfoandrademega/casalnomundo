@@ -69,7 +69,7 @@ test('backdrop closes the drawer and JSON actions collapse after selection',{ski
 async function panelSession(options){
  const result=fixture(),{window}=result;const analyticsReads=[];result.analyticsReads=analyticsReads;
  window.structuredClone=structuredClone;window.fetch=async()=>({ok:false});
- for(const file of ['defaults.js','permissions.js','image-upload.js','megabio-analytics.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
+ for(const file of ['defaults.js','permissions.js','image-upload.js','profile-design.js','megabio-analytics.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
  window.CNM_USERS={mount:async()=>{}};
  if(options.mapError)window.L={map(){throw new Error('Map container is not measurable');}};
  window.CNM_SUPABASE_CLIENT={auth:{getSession:async()=>({data:{session:{user:{id:'test-id'}}}})},from(table){return {
@@ -82,7 +82,7 @@ async function panelSession(options){
 test('restricted editor keeps only permitted mobile menu sections and cannot reveal JSON actions',{skip:!enabled},async()=>{
  const {dom,window,node,resize}=await panelSession({permissions:['profile']});try{
   assert(!window.document.body.classList.contains('auth-pending'));
-  assert.equal(node('mobile-section-label').textContent,'Perfil');
+  assert.equal(node('mobile-section-label').textContent,'Perfil e aparência');
   assert.equal(node('data-actions').hidden,true);assert.equal(node('save-toolbar').hidden,false);
   const buttons=[...window.document.querySelectorAll('.menu button')].filter(button=>!button.hidden);
   assert.deepEqual(buttons.map(button=>button.dataset.view),['profile']);
@@ -139,5 +139,24 @@ test('map is created only for measurable reports and removed when leaving the ta
   assert.equal(created,1);assert.equal(resized,1);assert.equal(node('total-visits').textContent,'1');
   window.document.querySelector('[data-view="overview"]').click();assert.equal(removed,1);
   node('refresh-overview').click();await new Promise(setImmediate);assert.equal(created,1);assert.equal(node('total-visits').textContent,'1');
+ }finally{dom.window.close();}
+});
+
+test('profile keeps browser title independent and restores only colors',{skip:!enabled},async()=>{
+ const {dom,window,node}=await panelSession({native:true});try{
+  window.document.querySelector('[data-view="profile"]').click();
+  const title=node('field-profile.siteTitle'),name=node('field-profile.name');
+  const initialTitle=title.value;
+  name.value='Nome personalizado';name.dispatchEvent(new window.Event('input',{bubbles:true}));
+  assert.equal(title.value,initialTitle);assert.equal(node('preview-tab-title').textContent,initialTitle);
+  title.value='Título independente';title.dispatchEvent(new window.Event('input',{bubbles:true}));
+  assert.equal(node('preview-name').textContent,'Nome personalizado');assert.equal(node('preview-tab-title').textContent,'Título independente');
+  window.document.querySelector('[data-color-preset="night"]').click();assert.equal(node('color-background').value,'#172822');
+  window.document.querySelector('[data-reset-colors]').click();assert.equal(node('color-background').value,'#ffffff');assert.equal(node('color-accent').value,'#f36b35');
+  assert.equal(name.value,'Nome personalizado');assert.equal(title.value,'Título independente');
+  const mode=window.document.querySelector('[name="cover-type"][value="video"]');mode.checked=true;mode.dispatchEvent(new window.Event('input',{bubbles:true}));
+  assert.equal(window.document.querySelector('[data-video-field]').hidden,false);
+  assert.equal(window.document.querySelector('[data-upload-path="profile.video"]').accept,'video/mp4,video/webm');
+  assert.match(window.document.querySelector('.site-link').textContent,/Visitar MegaBio/);
  }finally{dom.window.close();}
 });

@@ -98,7 +98,7 @@ class Handler(SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
-    def upload_image(self):
+    def upload_image(self, video=False):
         # This fallback is available only without Supabase on the loopback server.
         if os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_PUBLISHABLE_KEY"):
             self.send_json({"error": "use authenticated Supabase storage"}, 403)
@@ -112,11 +112,14 @@ class Handler(SimpleHTTPRequestHandler):
         except ValueError:
             self.send_json({"error": "invalid size"}, 400)
             return
-        if not 0 < size <= 5 * 1024 * 1024:
-            self.send_json({"error": "image must be at most 5 MB"}, 413)
+        max_size = (25 if video else 5) * 1024 * 1024
+        if not 0 < size <= max_size:
+            self.send_json({"error": "file exceeds size limit"}, 413)
             return
         content_type = self.headers.get("Content-Type", "").split(";")[0]
         extensions = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}
+        if video:
+            extensions = {"video/mp4": "mp4", "video/webm": "webm"}
         if content_type not in extensions:
             self.send_json({"error": "unsupported image format"}, 415)
             return
@@ -127,6 +130,8 @@ class Handler(SimpleHTTPRequestHandler):
             "image/webp": body[:4] == b"RIFF" and body[8:12] == b"WEBP",
             "image/gif": body[:6] in (b"GIF87a", b"GIF89a"),
         }
+        if video:
+            valid = {"video/mp4": body[4:8] == b"ftyp" and any(brand in body[8:4096] for brand in (b"isom", b"iso2", b"iso3", b"iso4", b"iso5", b"iso6", b"avc1", b"mp41", b"mp42", b"M4V ", b"dash", b"cmfc", b"MSNV")), "video/webm": body.startswith(b"\x1a\x45\xdf\xa3") and b"webm" in body[:4096]}
         if len(body) != size or not valid[content_type]:
             self.send_json({"error": "invalid image"}, 415)
             return
@@ -138,6 +143,9 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         route = urlparse(self.path).path
+        if route == "/api/media":
+            self.upload_image(video=True)
+            return
         if route == "/api/uploads":
             self.upload_image()
             return

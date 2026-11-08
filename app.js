@@ -26,10 +26,12 @@
   const socialArrow = '<svg class="social-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12 12 4M4 4h8v8"/></svg>';
 
   function render(d) {
-    document.title = d.profile?.name || 'Casal no Mundo';
+    const profile=window.CNM_PROFILE.normalize(d.profile||{});
+    document.title=profile.siteTitle;window.CNM_PROFILE.applyColors(document.documentElement,profile.colors);
+    document.querySelector('meta[name="theme-color"]').setAttribute('content',profile.colors.background);
     const hero = document.querySelector('#hero');
-    hero.innerHTML = image(d.profile?.image, `${d.profile?.name || 'Perfil'} na praia`);
-    hero.querySelector('img').loading = 'eager';
+    window.CNM_PROFILE.renderHero(hero,profile);
+    hero.setAttribute('aria-label','Capa de '+(profile.name||'MegaBio'));
     document.querySelector('#identity').innerHTML = `<p class="eyebrow">${esc(d.profile?.eyebrow || '')}</p><h1>${esc(d.profile?.name || '')}</h1><p class="subline">${esc(d.profile?.subtitle || '')}</p>`;
 
     const stays = d.stays || (d.stay ? [d.stay] : []);

@@ -54,3 +54,26 @@ test('previews only supported URLs, never script or inline HTML',()=>{
   assert.equal(images.previewUrl('/uploads/test.png'),'/uploads/test.png');
   assert.equal(images.previewUrl('casal-no-mundo.webp'),'casal-no-mundo.webp');
 });
+const mp4=()=>new File([Buffer.from('000000186674797069736f6d0000020069736f6d6d703432','hex')],'capa.mp4',{type:'video/mp4'});
+test('video accepts MP4/WebM only when explicitly allowed for the profile and enforces 25 MB',async()=>{
+ const images=setup();await images.validate(mp4(),{allowVideo:true});
+ await assert.rejects(images.validate(mp4()),/JPG/);
+ await assert.rejects(images.validate({size:26*1024*1024,type:'video/mp4'},{allowVideo:true}),/25 MB/);
+ await assert.rejects(images.validate(new File(['not a movie'],'fake.mp4',{type:'video/mp4'}),{allowVideo:true}),/vídeo/);
+ await assert.rejects(images.upload(mp4(),{allowVideo:true,section:'products',admin:true,client:{}}),/apenas para a capa/);
+});
+test('video goes directly to storage using a signed profile upload, without exposing a server key',async()=>{
+ const images=setup('example.com',async(url,options)=>{assert.equal(url,'/api/video-upload');assert.equal(options.headers.Authorization,'Bearer user-jwt');assert.equal(JSON.parse(options.body).mimeType,'video/mp4');return {ok:true,json:async()=>({bucket:'site-videos',path:'videos/profile/test.mp4',token:'signed'})};});
+ let uploaded=false;
+ const client={
+  auth:{getSession:async()=>({data:{session:{access_token:'user-jwt'}}})},
+  storage:{from(bucket){
+   assert.equal(bucket,'site-videos');
+   return {
+    async uploadToSignedUrl(path,token,file){assert.equal(path,'videos/profile/test.mp4');assert.equal(token,'signed');assert.equal(file.type,'video/mp4');uploaded=true;return {error:null}},
+    getPublicUrl:()=>({data:{publicUrl:'https://test.supabase.co/storage/v1/object/public/site-videos/videos/profile/test.mp4'}})
+   };
+  }}
+ };
+ const url=await images.upload(mp4(),{client,admin:true,allowVideo:true,section:'profile'});assert(uploaded);assert.match(url,/site-videos/);
+});

@@ -1,6 +1,10 @@
 window.CNM_DEFAULT_DATA = {
   "profile": {
     "name": "Casal no Mundo",
+    "siteTitle": "Casal no Mundo",
+    "heroType": "image",
+    "video": "",
+    "colors": {"background":"#ffffff","text":"#171717","accent":"#f36b35","surface":"#ffffff"},
     "eyebrow": "Viagens a dois",
     "subtitle": "Nossos links, num só lugar.",
     "image": "casal-no-mundo.webp"
