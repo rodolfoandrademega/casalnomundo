@@ -10,7 +10,7 @@
     const hero = document.querySelector('#hero');
     hero.innerHTML = image(d.profile?.image, `${d.profile?.name || 'Perfil'} na praia`);
     hero.querySelector('img').loading = 'eager';
-    document.querySelector('#identity').innerHTML = `<div class="monogram" aria-hidden="true">${esc((d.profile?.name || 'CNM').split(/\s+/).map(w => w[0]).slice(0,3).join('').toUpperCase())}</div><p class="eyebrow">${esc(d.profile?.eyebrow || '')}</p><h1>${esc(d.profile?.name || '')}</h1><p class="subline">${esc(d.profile?.subtitle || '')}</p>`;
+    document.querySelector('#identity').innerHTML = `<p class="eyebrow">${esc(d.profile?.eyebrow || '')}</p><h1>${esc(d.profile?.name || '')}</h1><p class="subline">${esc(d.profile?.subtitle || '')}</p>`;
 
     const stays = d.stays || (d.stay ? [d.stay] : []);
     document.querySelector('#stays').innerHTML = stays.map((s,i) => anchor(s.url, `${image(s.image, s.title, 'stay-photo')}<span class="stay-copy"><span class="label">${esc(s.label || '')}</span><strong class="stay-title">${esc(s.title || '')}</strong><p>${esc(s.description || '')}</p><span class="facts">${(s.facts || []).map(f => `<span>${esc(f)}</span>`).join('')}</span></span>`, 'stay', `stay_${i}`, s.title || 'Hospedagem')).join('');
