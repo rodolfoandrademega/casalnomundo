@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 import os
 import threading
+import uuid
 from urllib.parse import unquote, urlparse
 
 ROOT = Path(__file__).resolve().parent
@@ -97,8 +98,49 @@ class Handler(SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
+    def upload_image(self):
+        # This fallback is available only without Supabase on the loopback server.
+        if os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_PUBLISHABLE_KEY"):
+            self.send_json({"error": "use authenticated Supabase storage"}, 403)
+            return
+        origin = self.headers.get("Origin")
+        if origin and urlparse(origin).netloc != self.headers.get("Host"):
+            self.send_json({"error": "invalid origin"}, 403)
+            return
+        try:
+            size = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            self.send_json({"error": "invalid size"}, 400)
+            return
+        if not 0 < size <= 5 * 1024 * 1024:
+            self.send_json({"error": "image must be at most 5 MB"}, 413)
+            return
+        content_type = self.headers.get("Content-Type", "").split(";")[0]
+        extensions = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}
+        if content_type not in extensions:
+            self.send_json({"error": "unsupported image format"}, 415)
+            return
+        body = self.rfile.read(size)
+        valid = {
+            "image/jpeg": body.startswith(b"\xff\xd8\xff"),
+            "image/png": body.startswith(b"\x89PNG\r\n\x1a\n"),
+            "image/webp": body[:4] == b"RIFF" and body[8:12] == b"WEBP",
+            "image/gif": body[:6] in (b"GIF87a", b"GIF89a"),
+        }
+        if len(body) != size or not valid[content_type]:
+            self.send_json({"error": "invalid image"}, 415)
+            return
+        filename = f"{uuid.uuid4().hex}.{extensions[content_type]}"
+        folder = ROOT / "uploads"
+        folder.mkdir(exist_ok=True)
+        (folder / filename).write_bytes(body)
+        self.send_json({"url": f"/uploads/{filename}"}, 201)
+
     def do_POST(self):
         route = urlparse(self.path).path
+        if route == "/api/uploads":
+            self.upload_image()
+            return
         try:
             payload = self.read_body(4_000)
         except (ValueError, json.JSONDecodeError, UnicodeDecodeError):

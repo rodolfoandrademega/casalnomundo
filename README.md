@@ -5,7 +5,7 @@ Link page estática com painel de edição e relatórios. Em produção, o conte
 ## Supabase
 
 1. Crie um projeto no Supabase.
-2. Abra **SQL Editor**, execute todo o arquivo [`supabase/schema.sql`](supabase/schema.sql).
+2. Abra **SQL Editor**, execute todo o arquivo [`supabase/schema.sql`](supabase/schema.sql) e depois [`supabase/storage.sql`](supabase/storage.sql) para ativar o envio de imagens.
 3. Em **Authentication → Providers / Settings**, desative cadastro público. Em **Authentication → Users**, crie um usuário para o administrador.
 4. No SQL Editor, associe esse usuário ao painel, trocando o e-mail:
 
@@ -58,3 +58,18 @@ Abra `http://127.0.0.1:8000` e acesse o painel em `http://127.0.0.1:8000/admin`.
 ## Relatórios e privacidade
 
 Visitas, cliques e seções vistas são registrados sem IP ou identificador individual. A localização aproximada só é enviada depois que a pessoa escolhe compartilhar e autoriza o navegador; as coordenadas são arredondadas antes do envio. O relatório de regiões mostra somente esse conjunto consentido.
+
+## Envio de imagens
+
+No painel `/admin`, os campos de imagem do perfil, hospedagens, destinos, produtos e destaques permitem **Enviar imagem**, visualizar a prévia e **Remover**. O link de imagem continua disponível em **Usar um link de imagem**. São aceitos JPG, PNG, WebP e GIF de até 5 MB. Após enviar ou remover, clique em **Salvar alterações** para publicar.
+
+Execute [`supabase/storage.sql`](supabase/storage.sql) uma vez no SQL Editor do projeto existente. Ele cria o bucket público `site-images`, limita formatos/tamanho e permite envio somente aos usuários de `site_admins`. O SQL é reaplicável. A chave publicável continua sendo suficiente no navegador; não adicione `service_role` ao frontend. Arquivos enviados têm nomes únicos e não substituem imagens publicadas. Remover no formulário retira a referência ao salvar, preservando arquivos que podem estar em uso em outro conteúdo.
+
+Sem Supabase, no modo local, os arquivos são gravados em `uploads/`, ignorada pelo Git e pela Vercel. Essas imagens locais não são enviadas ao site de produção; para publicação use o upload conectado ao Supabase.
+
+Validação do envio (sem instalar dependências):
+
+```sh
+node --test tests/image-upload.test.cjs
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py'
+```

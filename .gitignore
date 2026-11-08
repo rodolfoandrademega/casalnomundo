@@ -6,3 +6,4 @@ analytics.json
 .env.*
 !.env.example
 *.log
+uploads/
