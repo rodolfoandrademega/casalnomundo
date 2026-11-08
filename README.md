@@ -59,6 +59,22 @@ Abra `http://127.0.0.1:8000` e acesse o painel em `http://127.0.0.1:8000/admin`.
 
 Visitas, cliques e seções vistas são registrados sem IP ou identificador individual. O rodapé não oferece coleta de localização. O relatório de regiões preserva somente os dados históricos compartilhados com consentimento, sem solicitar novas localizações.
 
+## Listas, lixeira e histórico nativo
+
+Em instalações existentes, execute [`supabase/trash.sql`](supabase/trash.sql) no **SQL Editor** depois de `access.sql` e recarregue o painel. A migração preserva os conteúdos, atribui identificadores estáveis aos itens e cria as tabelas privadas `site_trash` e `site_activity`. Pode ser reaplicada. Ative essa estrutura antes de publicar a versão do painel com as novas listas.
+
+Hospedagens, destinos, produtos, destaques e redes aparecem como listas com busca, ordenação por nome ou posição e ações **Adicionar**, **Editar** e **Excluir**. O editor abre em uma janela; **Salvar item** publica somente aquela coleção, preservando alterações ainda não salvas no perfil ou contato. Cancelar descarta apenas o rascunho do item. Nas listas, o envio de imagem é publicado com **Salvar item**; no perfil, use **Salvar alterações**.
+
+Excluir remove o item publicado e grava sua cópia na lixeira na mesma transação. Apenas acessos nativos podem consultar ou recuperar itens. A proteção está nas permissões do banco, além do menu. As imagens e os vídeos permanecem no armazenamento para permitir recuperação. Não há exclusão definitiva pelo painel. A lixeira exige Supabase; o modo local não simula exclusões privadas em conteúdo público.
+
+As lojas de produtos ficam em uma lista dentro do editor. A exclusão de uma loja só é confirmada ao salvar o produto. Se o produto original também tiver sido excluído, recupere primeiro o produto para depois recuperar uma loja arquivada separadamente. Alterações concorrentes exigem recarregar o painel. Antes de excluir ou recuperar, salve os rascunhos pendentes.
+
+A área nativa **Acessos e atividades** registra entradas no painel, cadastros, edições, exclusões, recuperações e mudanças de permissões, com usuário e horário de Recife. Começa na ativação da migração; entradas repetidas em um minuto são agrupadas. Operações de servidor sem usuário autenticado aparecem como **Sistema**. Não registra senhas nem IPs. Os dados privados não entram no JSON público do site.
+
+Na lixeira, **Ver informações** mostra o conteúdo preservado, quem excluiu, quando e as métricas individuais de cliques e exibições do link. A consulta abrange até 10 mil eventos e informa quando atinge esse limite. Eventos antigos que usavam posição, anteriores à medição individual, não são atribuídos ao item. Links iguais compartilham as métricas da mesma divulgação.
+
+Verificação de interface: `JSDOM_MODULE=/caminho/node_modules/jsdom node --test tests/panel-records.test.cjs tests/native-center.test.cjs tests/panel-mobile.test.cjs`. Verificação das transações, permissões e recuperação em PostgreSQL/WASM: `PGLITE_MODULE=/caminho/node_modules/@electric-sql/pglite node --test tests/trash-db.test.cjs`.
+
 ## Envio de imagens
 
 No painel `/admin`, os campos de imagem do perfil, hospedagens, destinos, produtos e destaques permitem **Enviar imagem**, visualizar a prévia e **Remover**. O link de imagem continua disponível em **Usar um link de imagem**. São aceitos JPG, PNG, WebP e GIF de até 5 MB. Após enviar ou remover, clique em **Salvar alterações** para publicar.

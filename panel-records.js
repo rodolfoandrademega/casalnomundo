@@ -1,0 +1,86 @@
+(() => {
+  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const schemas={
+    stays:{view:'stay',one:'hospedagem',title:'Hospedagens',description:'Organize suas indicações de hospedagem em um só lugar.',fields:[['label','Localização'],['title','Nome da hospedagem',true],['description','Descrição',false,'textarea'],['facts','Detalhes separados por vírgula'],['url','Link do anúncio',true]]},
+    destinations:{view:'destinations',one:'destino',title:'Destinos',description:'Seus guias e lugares favoritos, prontos para explorar.',fields:[['title','Nome do destino',true],['description','Descrição',false,'textarea'],['url','Link do guia ou mapa',true],['linkLabel','Texto do link']]},
+    products:{view:'products',one:'produto',title:'Produtos',description:'Gerencie os achados que você recomenda e suas lojas.',fields:[['title','Nome do produto',true],['description','Descrição',false,'textarea']]},
+    highlights:{view:'highlights',one:'destaque',title:'Destaques',description:'Campanhas e novidades que merecem atenção.',fields:[['label','Chamada curta'],['title','Título do destaque',true],['description','Descrição',false,'textarea'],['url','Link de destino',true]]},
+    socials:{view:'socials',one:'rede',title:'Redes e contato',description:'Mantenha seus perfis e canais de contato organizados.',fields:[['label','Nome da rede',true],['url','Link do perfil',true]]}
+  };
+  const safeUrl=value=>{const url=String(value||'').trim();return /^(https?:\/\/|\.?\/)/i.test(url)?url:'';};
+  const name=item=>String(item.title||item.label||'Sem título');
+  function create({main,getData,can,mediaField,previewMedia,onCommit,onDelete,isBusy,notify,renderContact}){
+    const state={};let editor=null,changed=false,saving=false,deleteTarget=null;
+    main.insertAdjacentHTML('beforeend','<dialog class="record-dialog" id="record-dialog" aria-labelledby="record-dialog-title"><form id="record-form"><div class="record-dialog-header"><div><span class="control-eyebrow">Editor de conteúdo</span><h2 id="record-dialog-title"></h2></div><button type="button" class="icon-button" data-close-record aria-label="Fechar editor">×</button></div><div class="record-dialog-body" id="record-dialog-body"></div><div class="discard-confirm" hidden><p>Descartar as alterações deste item?</p><button type="button" class="button" data-continue-record>Continuar editando</button><button type="button" class="button" data-discard-record>Descartar</button></div><div class="record-dialog-footer"><span class="record-editor-message" role="status" aria-live="polite"></span><button type="button" class="button" data-close-record>Cancelar</button><button type="submit" class="button orange">Salvar item</button></div></form></dialog><dialog class="delete-dialog" id="delete-record-dialog" aria-labelledby="delete-dialog-title"><div class="delete-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6m4-6v6"/></svg></div><h2 id="delete-dialog-title">Mover para a lixeira?</h2><p id="delete-dialog-copy"></p><p class="hint">O item sairá da MegaBio. Apenas um acesso nativo poderá visualizar e recuperar o conteúdo na lixeira.</p><p class="delete-message" role="status" aria-live="polite"></p><div class="actions"><button class="button" type="button" data-cancel-delete>Cancelar</button><button class="button danger" type="button" data-confirm-delete>Mover para lixeira</button></div></dialog>');
+    const dialog=main.querySelector('#record-dialog'),deleteDialog=main.querySelector('#delete-record-dialog');
+    const show=element=>element.showModal?element.showModal():element.setAttribute('open','');
+    const hide=element=>element.close?element.close():element.removeAttribute('open');
+    const values=root=>getData()[root]||[];
+    const record=(root,ref)=>ref.startsWith('legacy:')?values(root)[Number(ref.slice(7))]:values(root).find(item=>item._id===ref);
+    const reference=(item,index)=>item._id||'legacy:'+index;
+    function render(root){
+      const schema=schemas[root],container=document.getElementById('view-'+schema.view);if(!container)return;
+      state[root]||={query:'',sort:'position'};
+      const all=values(root),query=state[root].query.toLocaleLowerCase('pt-BR');
+      let rows=all.map((item,index)=>({item,index})).filter(({item})=>[item.title,item.label,item.description,item.url].some(value=>String(value||'').toLocaleLowerCase('pt-BR').includes(query)));
+      if(state[root].sort==='name')rows.sort((a,b)=>name(a.item).localeCompare(name(b.item),'pt-BR'));
+      container.innerHTML=`<div class="collection-heading"><div><span class="control-eyebrow">Biblioteca de conteúdo</span><h2>${schema.title}<span class="collection-count">${all.length}</span></h2><p>${schema.description}</p></div><button type="button" class="button orange" data-record-add="${root}"><span aria-hidden="true">+</span> Adicionar ${schema.one}</button></div><div class="collection-toolbar"><label class="collection-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input type="search" data-record-search="${root}" value="${esc(state[root].query)}" placeholder="Buscar ${schema.title.toLowerCase()}" aria-label="Buscar ${schema.title.toLowerCase()}"></label><select data-record-sort="${root}" aria-label="Ordenar ${schema.title.toLowerCase()}"><option value="position" ${state[root].sort==='position'?'selected':''}>Ordem na MegaBio</option><option value="name" ${state[root].sort==='name'?'selected':''}>Nome A–Z</option></select></div><div class="collection-meta"><span>${rows.length} de ${all.length} ${all.length===1?'item':'itens'}</span><span>Editar sem sair da lista</span></div><div class="record-list">${rows.length?rows.map(({item,index})=>`<article class="record-row"><div class="record-thumb">${safeUrl(item.image)||/^[\w-]+\.(webp|png|jpe?g)$/i.test(item.image||'')?`<img src="${esc(item.image)}" alt="" loading="lazy">`:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M7 16h10M7 12h7M7 8h5"/></svg>'}</div><div class="record-summary"><span class="record-position">${String(index+1).padStart(2,'0')} · ${schema.one}</span><h3>${esc(name(item))}</h3><p>${esc(item.description||item.url||item.label||'Adicione os detalhes deste conteúdo.')}</p>${root==='products'?`<span class="record-store-count">${(item.links||[]).length} loja(s) cadastrada(s)</span>`:''}</div><div class="record-actions"><button type="button" class="button" data-record-edit="${root}" data-record-ref="${esc(reference(item,index))}">Editar</button><button type="button" class="button record-trash" data-record-delete="${root}" data-record-ref="${esc(reference(item,index))}" aria-label="Excluir ${esc(name(item))}">Excluir</button></div></article>`).join(''):`<div class="collection-empty"><span class="collection-empty-icon" aria-hidden="true">＋</span><h3>${all.length?'Nenhum resultado encontrado':'Sua lista começa aqui'}</h3><p>${all.length?'Tente buscar por outro nome ou limpe a pesquisa.':`Adicione seu primeiro ${schema.one} e organize o conteúdo da MegaBio.`}</p>${all.length?`<button class="button" type="button" data-clear-search="${root}">Limpar busca</button>`:`<button class="button orange" type="button" data-record-add="${root}">Adicionar ${schema.one}</button>`}</div>`}</div>${root==='socials'?'<div class="card contact-editor-card"><div class="editor-card-heading"><span class="editor-step">↗</span><div><h3>Contato comercial</h3><p>O canal de contato da sua MegaBio.</p></div></div><div id="contact-fields"></div></div>':''}`;
+      if(root==='socials'&&renderContact)renderContact();
+    }
+    function focusList(){if(!editor)return;const schema=schemas[editor.root],row=[...main.querySelectorAll('[data-record-edit]')].find(button=>button.dataset.recordEdit===editor.root&&button.dataset.recordRef===editor.ref),target=row||document.querySelector(`[data-record-add="${editor.root}"]`)||document.getElementById('view-'+schema.view);target?.focus({preventScroll:true});}
+    function close(){hide(dialog);focusList();editor=null;changed=false;}
+    function requestClose(){if(isBusy()||saving)return;if(changed){dialog.querySelector('.discard-confirm').hidden=false;}else close();}
+    function shopFields(){if(!editor||editor.root!=='products')return;const list=dialog.querySelector('#record-shops');list.innerHTML=(editor.draft.links||[]).map(shop=>`<div class="shop-record"><details ${shop._editing?'open':''}><summary><span>${esc(shop.label||'Nova loja')}</span><span>Editar</span></summary><div class="fields"><div class="field"><label>Nome da loja<input data-shop-id="${esc(shop._id)}" data-shop-key="label" value="${esc(shop.label||'')}" required></label></div><div class="field"><label>Link da loja<input data-shop-id="${esc(shop._id)}" data-shop-key="url" value="${esc(shop.url||'')}" inputmode="url" required></label></div></div></details><button class="button record-trash" type="button" data-record-remove-shop="${esc(shop._id)}">Excluir loja</button></div>`).join('')||'<p class="hint">Nenhuma loja adicionada.</p>';}
+    function open(root,ref){
+      const schema=schemas[root];if(!schema||!can(schema.view)||isBusy())return;
+      const source=ref?record(root,ref):null;if(ref&&!source)return;
+      editor={root,ref,draft:structuredClone(source||{_id:crypto.randomUUID(),title:'',label:'',description:'',url:'',image:'',facts:[],links:[],linkLabel:'Guia do destino'})};changed=false;
+      if(root==='products')editor.draft.links=(editor.draft.links||[]).map(shop=>({...shop,_id:shop._id||crypto.randomUUID()}));
+      dialog.querySelector('#record-dialog-title').textContent=(source?'Editar ':'Adicionar ')+schema.one;
+      dialog.querySelector('.record-editor-message').textContent='';dialog.querySelector('.discard-confirm').hidden=true;
+      dialog.querySelector('#record-dialog-body').innerHTML=`<div class="fields">${schema.fields.map(([key,label,required,type])=>`<div class="field${type==='textarea'?' full':''}"><label for="record-${key}">${label}</label>${type==='textarea'?`<textarea id="record-${key}" data-record-field="${key}">${esc(editor.draft[key]||'')}</textarea>`:`<input id="record-${key}" data-record-field="${key}" value="${esc(Array.isArray(editor.draft[key])?editor.draft[key].join(', '):editor.draft[key]||'')}" ${required?'required':''} ${key==='url'?'inputmode="url"':''}>`}</div>`).join('')}</div>${root!=='socials'?mediaField('draft.image',editor.draft.image):''}${root==='products'?'<div class="shop-list-heading"><div><h3>Lojas e links</h3><p>Edite as lojas deste produto.</p></div><button class="button" type="button" data-record-add-shop>+ Adicionar loja</button></div><div id="record-shops"></div><p class="hint">Lojas excluídas vão para a lixeira quando você salvar o produto.</p>':''}`;
+      shopFields();show(dialog);
+    }
+    dialog.addEventListener('cancel',event=>{event.preventDefault();requestClose();});
+    deleteDialog.addEventListener('cancel',event=>{if(saving){event.preventDefault();}});
+    main.addEventListener('input',event=>{
+      const target=event.target;
+      if(target.dataset.recordSearch){const root=target.dataset.recordSearch,selection=target.selectionStart;state[root].query=target.value;render(root);const replacement=main.querySelector(`[data-record-search="${root}"]`);replacement.focus();try{replacement.setSelectionRange(selection,selection);}catch(_){}return;}
+      if(!editor||!dialog.contains(target))return;
+      if(target.dataset.recordField){editor.draft[target.dataset.recordField]=target.value;changed=true;}
+      if(target.dataset.shopId){const shop=editor.draft.links.find(item=>item._id===target.dataset.shopId);if(shop){shop[target.dataset.shopKey]=target.value;changed=true;}}
+      if(target.matches('[data-image-url]')){editor.draft.image=target.value;changed=true;previewMedia(target.closest('[data-image-editor]'),target.value);}
+    });
+    main.addEventListener('change',event=>{if(event.target.dataset.recordSort){const root=event.target.dataset.recordSort;state[root].sort=event.target.value;render(root);}});
+    main.addEventListener('click',async event=>{
+      const target=event.target;
+      if(target.closest('[data-close-record]')){requestClose();return;}
+      if(target.closest('[data-continue-record]')){dialog.querySelector('.discard-confirm').hidden=true;return;}
+      if(target.closest('[data-discard-record]')){close();return;}
+      const add=target.closest('[data-record-add]');if(add){open(add.dataset.recordAdd);return;}
+      const edit=target.closest('[data-record-edit]');if(edit){open(edit.dataset.recordEdit,edit.dataset.recordRef);return;}
+      const clear=target.closest('[data-clear-search]');if(clear){state[clear.dataset.clearSearch].query='';render(clear.dataset.clearSearch);return;}
+      const remove=target.closest('[data-record-delete]');if(remove){const root=remove.dataset.recordDelete,schema=schemas[root];if(!can(schema.view)||isBusy())return;deleteTarget={root,ref:remove.dataset.recordRef,item:record(root,remove.dataset.recordRef)};if(!deleteTarget.item)return;deleteDialog.querySelector('#delete-dialog-copy').textContent='“'+name(deleteTarget.item)+'” será removido da lista publicada.';deleteDialog.querySelector('.delete-message').textContent='';show(deleteDialog);return;}
+      if(target.closest('[data-cancel-delete]')){if(!saving)hide(deleteDialog);return;}
+      if(target.closest('[data-confirm-delete]')){
+        if(!deleteTarget||saving||isBusy())return;saving=true;const button=deleteDialog.querySelector('[data-confirm-delete]');button.disabled=true;
+        try{await onDelete(deleteTarget.root,deleteTarget.item);hide(deleteDialog);render(deleteTarget.root);notify('Item movido para a lixeira.');}catch(error){deleteDialog.querySelector('.delete-message').textContent=error.message||'Não foi possível excluir.';}finally{saving=false;button.disabled=false;}return;
+      }
+      if(target.closest('[data-record-add-shop]')&&editor?.root==='products'){editor.draft.links.push({_id:crypto.randomUUID(),label:'',url:'',_editing:true});changed=true;shopFields();return;}
+      const shopRemove=target.closest('[data-record-remove-shop]');if(shopRemove&&editor?.root==='products'){editor.draft.links=editor.draft.links.filter(item=>item._id!==shopRemove.dataset.recordRemoveShop);changed=true;shopFields();}
+    });
+    dialog.querySelector('form').addEventListener('submit',async event=>{
+      event.preventDefault();event.stopPropagation();if(!editor||saving||isBusy())return;
+      const message=dialog.querySelector('.record-editor-message'),item=structuredClone(editor.draft),schema=schemas[editor.root];
+      if(item.url&&!safeUrl(item.url)){message.textContent='Informe um link com https:// ou um caminho válido.';return;}
+      if(schema.fields.some(([key,,required])=>required&&!String(item[key]||'').trim())){message.textContent='Preencha os campos obrigatórios.';return;}
+      if(editor.root==='products'&&(item.links||[]).some(shop=>!shop.label.trim()||!safeUrl(shop.url))){message.textContent='Informe nome e link válido de cada loja.';return;}
+      if(typeof item.facts==='string')item.facts=item.facts.split(',').map(value=>value.trim()).filter(Boolean);
+      if(item.links)item.links=item.links.map(({_editing,...shop})=>shop);
+      saving=true;const buttons=[...dialog.querySelectorAll('button')];buttons.forEach(button=>button.disabled=true);message.textContent='Salvando item…';
+      try{await onCommit(editor.root,editor.ref,item);const root=editor.root;if(!editor.ref)state[root].query='';changed=false;close();render(root);notify('Item salvo na MegaBio.');}catch(error){message.textContent=error.message||'Não foi possível salvar.';}finally{saving=false;buttons.forEach(button=>button.disabled=false);}
+    });
+    return {renderAll(){Object.keys(schemas).forEach(render);},render,mediaContext(input){if(!editor||!dialog.contains(input))return null;return {section:schemas[editor.root].view,set(value){editor.draft.image=value;changed=true;}};},closeOnLogout(){hide(dialog);hide(deleteDialog);editor=null;deleteTarget=null;changed=false;},schemas};
+  }
+  window.CNM_RECORDS={create};
+})();

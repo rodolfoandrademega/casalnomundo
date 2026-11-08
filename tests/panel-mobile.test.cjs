@@ -69,12 +69,12 @@ test('backdrop closes the drawer and JSON actions collapse after selection',{ski
 async function panelSession(options){
  const result=fixture(),{window}=result;const analyticsReads=[];result.analyticsReads=analyticsReads;
  window.structuredClone=structuredClone;window.fetch=async()=>({ok:false});
- for(const file of ['defaults.js','permissions.js','image-upload.js','profile-design.js','megabio-analytics.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
+ for(const file of ['defaults.js','permissions.js','image-upload.js','profile-design.js','megabio-analytics.js','panel-records.js','native-center.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
  window.CNM_USERS={mount:async()=>{}};
  if(options.mapError)window.L={map(){throw new Error('Map container is not measurable');}};
- window.CNM_SUPABASE_CLIENT={auth:{getSession:async()=>({data:{session:{user:{id:'test-id'}}}})},from(table){return {
+ window.CNM_SUPABASE_CLIENT={rpc:(name,args)=>({then(resolve){return Promise.resolve(options.rpc?options.rpc(name,args):{error:{code:'PGRST202'}}).then(resolve)}}),auth:{getSession:async()=>({data:{session:{user:{id:'test-id'}}}})},from(table){return {
   select(){return this},eq(){return this},order(){return this},lte(key,value){this.end=value;return this},gte(key,value){this.start=value;return this},async range(first,last){analyticsReads.push({first,last,start:this.start,end:this.end});return options.analyticsError?{error:{message:'unavailable'}}:{data:(options.events||[]).slice(first,last+1)}},async limit(){return {data:[]}},
-  async maybeSingle(){return {data:table==='site_admins'?(options.native?{user_id:'test-id'}:null):table==='site_members'?{active:true,permissions:options.permissions||[]}:table==='site_content'?{payload:window.CNM_DEFAULT_DATA,updated_at:'2026-11-08T12:00:00Z'}:null};}
+  async maybeSingle(){return {data:table==='site_admins'?(options.native?{user_id:'test-id'}:null):table==='site_members'?{active:true,permissions:options.permissions||[]}:table==='site_content'?{payload:options.content||window.CNM_DEFAULT_DATA,updated_at:'2026-11-08T12:00:00Z'}:null};}
  }}};
  window.eval([...window.document.querySelectorAll('script:not([src])')].at(-1).textContent);
  await new Promise(setImmediate);return result;
@@ -158,5 +158,22 @@ test('profile keeps browser title independent and restores only colors',{skip:!e
   assert.equal(window.document.querySelector('[data-video-field]').hidden,false);
   assert.equal(window.document.querySelector('[data-upload-path="profile.video"]').accept,'video/mp4,video/webm');
   assert.match(window.document.querySelector('.site-link').textContent,/Visitar MegaBio/);
+ }finally{dom.window.close();}
+});
+
+test('saving one list item preserves unrelated profile drafts and sends only that collection',{skip:!enabled},async()=>{
+ const original=JSON.parse(fs.readFileSync(path.join(__dirname,'../conteudo.json'),'utf8'));
+ original.stays[0]._id='11111111-1111-1111-1111-111111111111';const requests=[];
+ const {dom,window,node}=await panelSession({native:true,content:original,rpc(name,args){
+  if(name==='content_management_status')return {data:{version:1}};
+  if(name==='record_site_access')return {data:null};
+  if(name==='save_site_sections'){requests.push(args.patch);return {data:{payload:{...original,...args.patch},updated_at:'2026-11-08T13:00:00Z'}};}
+  return {data:null};
+ }});try{
+  window.document.querySelector('[data-view="profile"]').click();node('field-profile.name').value='Rascunho do perfil';node('field-profile.name').dispatchEvent(new window.Event('input',{bubbles:true}));
+  window.document.querySelector('[data-view="stay"]').click();window.document.querySelector('[data-record-edit="stays"]').click();node('record-title').value='Hospedagem atualizada';node('record-title').dispatchEvent(new window.Event('input',{bubbles:true}));
+  node('record-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(setImmediate);
+  assert.equal(requests.length,1);assert.deepEqual(Object.keys(requests[0]),['stays']);assert.equal(requests[0].stays[0].title,'Hospedagem atualizada');
+  assert.equal(node('field-profile.name').value,'Rascunho do perfil');assert.equal(node('save-status').textContent,'Alterações não salvas');
  }finally{dom.window.close();}
 });
