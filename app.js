@@ -77,15 +77,7 @@
   document.addEventListener('click', e => {
     const link = e.target.closest('[data-track]');
     if (link) track({type:'click',id:link.dataset.track,label:link.dataset.label || link.textContent.trim()});
-    if (e.target.closest('#share-location')) {
-      const status = document.querySelector('#location-status');
-      if (!navigator.geolocation) { status.textContent = 'Localização indisponível neste navegador.'; return; }
-      status.textContent = 'Aguardando sua permissão…';
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat=Number(pos.coords.latitude.toFixed(1)),lon=Number(pos.coords.longitude.toFixed(1));
-        track({type:'location',id:'region',label:'Região aproximada',lat,lon}).then(()=>status.textContent='Obrigado! Sua região aproximada foi adicionada ao mapa.').catch(()=>status.textContent='Não foi possível registrar agora.');
-      }, () => status.textContent='Localização não compartilhada.', {maximumAge:600000,timeout:10000});
-    }
+
   });
   track({type:'visit',id:'page',label:'Página'});
   if ('IntersectionObserver' in window) {

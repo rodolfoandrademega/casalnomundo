@@ -57,7 +57,7 @@ Abra `http://127.0.0.1:8000` e acesse o painel em `http://127.0.0.1:8000/admin`.
 
 ## Relatórios e privacidade
 
-Visitas, cliques e seções vistas são registrados sem IP ou identificador individual. A localização aproximada só é enviada depois que a pessoa escolhe compartilhar e autoriza o navegador; as coordenadas são arredondadas antes do envio. O relatório de regiões mostra somente esse conjunto consentido.
+Visitas, cliques e seções vistas são registrados sem IP ou identificador individual. O rodapé não oferece coleta de localização. O relatório de regiões preserva somente os dados históricos compartilhados com consentimento, sem solicitar novas localizações.
 
 ## Envio de imagens
 
