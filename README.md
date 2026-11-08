@@ -29,7 +29,7 @@ O conteúdo inicial é carregado do arquivo local como fallback. Entre no painel
 4. No Supabase, adicione o domínio Vercel em **Authentication → URL Configuration → Site URL / Redirect URLs**, por exemplo `https://seu-projeto.vercel.app/**`.
 5. Acesse `/admin` e entre com o usuário administrador.
 
-Não configure `SUPABASE_SECRET_KEY` nem `service_role` neste projeto: o frontend usa a chave publicável e as políticas RLS limitam as operações.
+O frontend usa somente a chave publicável. Para criar usuários pelo painel, configure `SUPABASE_SECRET_KEY` exclusivamente no servidor da Vercel, conforme a seção de usuários abaixo. Essa chave nunca é retornada por `/api/config` nem enviada ao navegador.
 
 ## Git
 
@@ -73,3 +73,28 @@ Validação do envio (sem instalar dependências):
 node --test tests/image-upload.test.cjs
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
+
+## Usuários e permissões
+
+Os usuários que já constam em `site_admins` são os **acessos nativos**: mantêm acesso completo, incluindo importar/exportar JSON e gerenciar cadastros. Os novos usuários nunca são inseridos nessa tabela pelo painel.
+
+Para ativar:
+
+1. Execute [`supabase/access.sql`](supabase/access.sql) no SQL Editor depois de `schema.sql` e `storage.sql`. É uma migração reaplicável que preserva os acessos nativos e o conteúdo atual.
+2. No Supabase, copie uma chave **Secret** do projeto (ou `service_role` legada). Na Vercel, crie `SUPABASE_SECRET_KEY` em **Settings → Environment Variables → Production** e marque como secreta. Não coloque essa chave no código, nos campos do painel, em variáveis `NEXT_PUBLIC_`/`VITE_` ou em `/api/config`.
+3. Faça um novo deploy após configurar a variável. O endpoint Node `/api/users` só funciona na Vercel (ou em `vercel dev`); o servidor Python oferece a prévia do painel e edição local, sem provisionar contas.
+4. Entre com um acesso nativo e abra **Usuários e permissões**. Preencha nome, e-mail e senha inicial (12–128 caracteres), escolha as seções e clique em **Criar cadastro**. Não há cadastro público nem envio de e-mail automático. A sessão do administrador é preservada.
+
+Permissões disponíveis: Perfil, Hospedagens, Destinos, Produtos, Destaques, Redes e contato e Relatórios. As seções de conteúdo permitem edição e upload de imagens na seção correspondente; Relatórios libera a visão geral e os relatórios, sem edição. Importar/exportar JSON e gerenciar usuários são exclusivos de acessos nativos, sem opção de delegação. Para suspender um cadastro, desmarque **Acesso ativo** e salve suas permissões. Cadastros existentes no Supabase sem acesso ao painel aparecem na lista e podem receber permissões por um nativo.
+
+As regras são aplicadas no PostgreSQL: usuários limitados não podem escrever diretamente em `site_content`, modificar `site_members` ou promover-se a nativos. A função `save_site_sections` valida cada seção e sua versão antes de mesclar as alterações. A revogação bloqueia novas gravações, leituras de relatórios e uploads, mesmo se uma tela antiga continuar aberta. Imagens publicadas e conteúdo público do site continuam públicos.
+
+Até a migração, acessos nativos continuam editando e salvando conteúdo. O cadastro e os acessos limitados só ficam ativos após a configuração. Se uma conta for criada no Auth mas houver falha ao gravar as permissões, ela fica sem acesso e pode ser liberada por um nativo na lista de usuários, sem excluir ou substituir a conta.
+
+Validação de acesso:
+
+```sh
+node --test tests/permissions.test.cjs tests/users-api.test.cjs tests/image-upload.test.cjs
+```
+
+Para executar o teste de regras em PostgreSQL/WASM sem alterar as dependências do site, instale `@electric-sql/pglite` em um diretório temporário e execute `PGLITE_MODULE=/caminho/node_modules/@electric-sql/pglite node --test tests/access-db.test.cjs`. O teste reaplica as migrações e cobre edição por seção, bloqueio de promoção, relatórios, uploads, concorrência e revogação. Ele é ignorado quando `PGLITE_MODULE` não está definido.

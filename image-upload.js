@@ -19,10 +19,11 @@
     const url=String(value || '').trim();
     return /^(https?:\/\/|\.?\.?\/)/i.test(url) || /^[\w-]+\.(jpe?g|png|webp|gif)$/i.test(url) ? url : '';
   }
-  async function upload(file, {client, admin, local=false}) {
+  async function upload(file, {client, admin, local=false, section=null}) {
     await validate(file);
     if (client && admin) {
-      const key=`images/${crypto.randomUUID()}.${TYPES[file.type]}`;
+      const folder=['profile','stay','destinations','products','highlights'].includes(section)?section+'/':'';
+      const key=`images/${folder}${crypto.randomUUID()}.${TYPES[file.type]}`;
       const bucket=client.storage.from('site-images');
       const {error}=await bucket.upload(key,file,{contentType:file.type,cacheControl:'31536000',upsert:false});
       if (error) {

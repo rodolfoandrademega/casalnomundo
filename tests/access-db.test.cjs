@@ -1,0 +1,56 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+test('PostgreSQL enforces section permissions, native-only management and revocation',{skip:!process.env.PGLITE_MODULE},async()=>{
+ const {PGlite}=require(process.env.PGLITE_MODULE);
+ const db=new PGlite();
+ try{
+  await db.exec(`
+   create role anon; create role authenticated; create role service_role bypassrls;
+   create schema auth; create schema storage;
+   create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}',created_at timestamptz default now());
+   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+   grant usage on schema auth to authenticated,anon;
+   create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+   create table storage.objects(id bigint generated always as identity primary key,bucket_id text,name text);
+   alter table storage.objects enable row level security;
+   create function storage.foldername(text) returns text[] language sql immutable as $$ select (string_to_array($1,'/'))[1:array_length(string_to_array($1,'/'),1)-1] $$;
+   grant usage on schema storage to authenticated;
+   grant insert on storage.objects to authenticated;
+   grant usage on sequence storage.objects_id_seq to authenticated;
+  `);
+  for(let pass=0;pass<2;pass++)for(const file of ['schema.sql','storage.sql','access.sql'])await db.exec(fs.readFileSync(path.join(__dirname,'../supabase',file),'utf8'));
+  const native='00000000-0000-0000-0000-000000000001',editor='00000000-0000-0000-0000-000000000002',viewer='00000000-0000-0000-0000-000000000003';
+  for(const [id,email] of [[native,'native@example.com'],[editor,'editor@example.com'],[viewer,'viewer@example.com']])await db.query('insert into auth.users(id,email) values($1,$2)',[id,email]);
+  await db.query('insert into public.site_admins(user_id) values($1)',[native]);
+  await db.exec(`insert into public.site_content(id,payload) values(1,'{"profile":{"name":"Original"},"stays":[{"title":"Keep"}]}');insert into public.site_events(kind) values('visit');`);
+  const user=async id=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');};
+  await user(native);
+  assert.equal((await db.query('select * from public.list_site_members()')).rows.length,3);
+  await db.query('select public.update_site_member($1,$2,$3)',[editor,['profile'],true]);
+  await db.query('select public.update_site_member($1,$2,$3)',[viewer,['reports'],true]);
+  await assert.rejects(db.query('select public.update_site_member($1,$2,$3)',[native,[],false]),/Native access/);
+  await user(editor);
+  assert.equal((await db.query('select * from public.site_members')).rows.length,1);
+  assert.equal((await db.query('select * from public.site_events')).rows.length,0);
+  assert.equal((await db.query(`update public.site_content set payload='{}' where id=1 returning id`)).rows.length,0);
+  await assert.rejects(db.query('select public.list_site_members()'),/Access denied/);
+  await assert.rejects(db.query('select public.update_site_member($1,$2,$3)',[editor,['reports'],true]),/Access denied/);
+  await assert.rejects(db.query("update public.site_members set permissions=array['reports'] where user_id=$1",[editor]),/permission denied/);
+  let revision=(await db.query('select updated_at::text as revision from public.site_content')).rows[0].revision;
+  for(const patch of [{stays:[]},{permissions:['users']},{contact:{url:'changed'}}])await assert.rejects(db.query('select public.save_site_sections($1,$2)',[patch,revision]),/Section access denied/);
+  const saved=await db.query('select public.save_site_sections($1,$2) as result',[{profile:{name:'Allowed'}},revision]);
+  assert.equal(saved.rows[0].result.payload.profile.name,'Allowed');assert.equal(saved.rows[0].result.payload.stays[0].title,'Keep');
+  await assert.rejects(db.query('select public.save_site_sections($1,$2)',[{profile:{name:'Stale'}},revision]),/Content changed/);
+  await db.query('insert into storage.objects(bucket_id,name) values($1,$2)',['site-images','images/profile/new.png']);
+  for(const filename of ['images/stay/blocked.png','images/missing-section.png'])await assert.rejects(db.query('insert into storage.objects(bucket_id,name) values($1,$2)',['site-images',filename]),/row-level security/);
+  await user(viewer);
+  assert.equal((await db.query('select * from public.site_events')).rows.length,1);
+  await assert.rejects(db.query('select public.save_site_sections($1,$2)',[{profile:{}},saved.rows[0].result.updated_at]),/Section access denied/);
+  await user(native);await db.query('select public.update_site_member($1,$2,$3)',[editor,['profile'],false]);
+  await user(editor);revision=(await db.query('select updated_at::text as revision from public.site_content')).rows[0].revision;
+  await assert.rejects(db.query('select public.save_site_sections($1,$2)',[{profile:{name:'Disabled'}},revision]),/Section access denied/);
+  await assert.rejects(db.query('insert into storage.objects(bucket_id,name) values($1,$2)',['site-images','images/profile/disabled.png']),/row-level security/);
+ }finally{await db.close();}
+});

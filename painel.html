@@ -34,6 +34,7 @@
 
     .image-editor{grid-column:1/-1}.image-upload{display:flex;align-items:center;gap:20px;padding:18px;border:1px solid var(--line);border-radius:9px;background:var(--soft)}.image-preview{position:relative;flex-shrink:0;width:112px;height:100px;display:grid;place-items:center;overflow:hidden;background:#e9ede2;border:1px solid #dce2d2;border-radius:7px;color:#839078;font-size:10px}.image-preview img{width:100%;height:100%;object-fit:cover}.image-preview img[hidden]{display:none}.image-preview.is-empty:after{content:'Sem imagem'}.image-upload-copy{min-width:0}.image-upload-copy strong{font-size:12px;font-weight:500}.image-upload-copy p{font-size:10px;line-height:1.6;color:var(--muted);margin:6px 0 12px}.image-upload-actions{display:flex;flex-wrap:wrap;gap:8px}.image-upload-actions .button{font-size:10px;min-height:34px;padding:8px 10px}.image-url{margin-top:12px}.image-url summary{width:fit-content;cursor:pointer;font-size:11px;color:#6f7d65;padding:5px 0}.image-url input{margin-top:8px}.image-message{font-size:11px;line-height:1.6;margin:9px 0 0;color:#687a59}.image-message:empty{display:none}.image-message[data-error="true"]{color:#a73222}.image-upload[aria-busy="true"]{opacity:.75}.image-upload-actions .button[hidden]{display:none}
     @media(max-width:480px){.image-upload{padding:14px;gap:14px;align-items:flex-start}.image-preview{width:76px;height:80px}.image-upload-copy p{font-size:9px}.image-upload-actions{gap:5px}}
+    .layout [hidden]{display:none!important}.permission-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;padding:18px;margin:22px 0 16px;border:1px solid var(--line);border-radius:8px}.permission-options legend{padding:0 7px;font-size:12px;font-weight:600}.permission-options label,.member-active{display:flex;align-items:center;gap:9px;font-size:12px;line-height:1.6}.permission-options input,.member-active input{width:16px;height:16px;accent-color:var(--orange);flex-shrink:0}.member-active{margin:18px 0}.member-badge{border-radius:6px;background:#edf1e7;color:#687a59;padding:7px 10px;font-size:10px;white-space:nowrap}.member-message{font-size:11px;line-height:1.7;color:#597448}.member-message[data-error="true"]{color:#a73222}
     body.auth-pending .layout{display:none}
     .login-wall{min-height:100vh;min-height:100svh;display:grid;grid-template-columns:minmax(0,1fr) minmax(440px,1fr);background:#faf9f6}
     .login-wall[hidden]{display:none}
@@ -90,6 +91,7 @@
         <button data-view="highlights" aria-current="false"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg></span>Destaques</button>
         <button data-view="socials" aria-current="false"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17 7h.01"/></svg></span>Redes e contato</button>
         <button data-view="reports" aria-current="false"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M9 16v-5M14 16V7M19 16v-9"/></svg></span>Relatórios</button>
+        <button data-view="users" hidden><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M18 6v6m-3-3h6"/></svg></span>Usuários e permissões</button>
       </nav>
       <div class="sidebar-bottom"><div class="sidebar-profile"><img src="/casal-no-mundo.webp" width="36" height="36" alt=""><div><strong>Casal no Mundo</strong><span>Área administrativa</span></div></div><p>Feito para quem vive e<br>compartilha o mundo.</p></div>
     </aside>
@@ -105,6 +107,7 @@
         <div class="report-grid"><div class="card"><h3>Links com mais cliques</h3><div class="table-wrap"><table><thead><tr><th>Botão</th><th>Cliques</th></tr></thead><tbody id="overview-click-table"></tbody></table></div></div><div class="card"><h3>Seções mais vistas</h3><div class="table-wrap"><table><thead><tr><th>Área da página</th><th>Visualizações</th></tr></thead><tbody id="overview-section-table"></tbody></table></div></div></div>
         <div class="card"><h3>Atalhos de edição</h3><div class="actions"><button class="button" data-jump="destinations">Editar destinos</button><button class="button" data-jump="products">Gerenciar produtos</button><button class="button" data-jump="highlights">Editar destaques</button><button class="button" data-jump="reports">Abrir relatório completo</button></div></div>
       </section>
+      <section class="view" id="view-users"></section>
       <section class="view" id="view-profile"></section>
       <section class="view" id="view-stay"></section>
       <section class="view" id="view-destinations"></section>
@@ -128,6 +131,8 @@
   <script src="supabase-bootstrap.js"></script>
   <script src="defaults.js"></script>
   <script src="image-upload.js"></script>
+  <script src="permissions.js"></script>
+  <script src="user-management.js"></script>
   <section class="login-wall" id="login-wall" aria-label="Acesso administrativo">
     <aside class="login-story">
       <a class="login-brand" href="/" aria-label="Casal no Mundo — página inicial"><span class="brand-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6.5h14M5 17.5h14"/></svg></span>CASAL NO MUNDO</a>
@@ -144,7 +149,7 @@
         <div class="login-error" id="login-error" role="alert" aria-live="polite"></div>
         <button class="login-submit" id="login-submit" type="submit"><span id="login-submit-label">Entrar no painel</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
         <button class="local-access" id="local-access" type="button" hidden>Abrir painel em modo local</button>
-        <p class="login-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Acesso exclusivo para administradores.</p>
+        <p class="login-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Acesso exclusivo para usuários autorizados.</p>
         <footer class="login-footer">Casal no Mundo · Conteúdo, conexões e novas histórias.</footer>
       </form>
     </div>
@@ -152,7 +157,8 @@
   <script>
   (()=>{
     const KEY='cnm.pageData.v1';let defaults,data,dirty=false,map,supabaseClient=null,supabaseAdmin=false;
-    const titles={overview:['Visão geral','Gerencie os conteúdos e veja o desempenho dos links.'],profile:['Perfil','Edite o nome, a frase e a foto do casal.'],stay:['Hospedagens','Adicione e edite várias hospedagens.'],destinations:['Destinos','Adicione, remova e reorganize os lugares recomendados.'],products:['Produtos','Gerencie vários produtos e links de compra.'],highlights:['Destaques','Crie chamadas visuais para links importantes.'],socials:['Redes e contato','Gerencie seus perfis e o contato comercial.'],reports:['Relatórios','Acompanhe cliques e regiões compartilhadas.']};
+    let panelAccess=window.CNM_PERMISSIONS.access(),baseline={},contentRevision=null;
+    const titles={users:['Usuários e permissões','Cadastre pessoas e defina o acesso de cada uma.'],overview:['Visão geral','Gerencie os conteúdos e veja o desempenho dos links.'],profile:['Perfil','Edite o nome, a frase e a foto do casal.'],stay:['Hospedagens','Adicione e edite várias hospedagens.'],destinations:['Destinos','Adicione, remova e reorganize os lugares recomendados.'],products:['Produtos','Gerencie vários produtos e links de compra.'],highlights:['Destaques','Crie chamadas visuais para links importantes.'],socials:['Redes e contato','Gerencie seus perfis e o contato comercial.'],reports:['Relatórios','Acompanhe cliques e regiões compartilhadas.']};
     const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const imageField=(path,value)=>{
       const id='image-'+path.replaceAll('.','-'),url=window.CNM_IMAGES.previewUrl(value);
@@ -164,18 +170,18 @@
     document.querySelector('.main').addEventListener('error',e=>{if(e.target.matches('[data-image-preview]')){e.target.hidden=true;e.target.parentElement.classList.add('is-empty');}},true);
     document.querySelector('.main').addEventListener('change',async e=>{
       const input=e.target;if(!input.matches('[data-upload-path]'))return;
-      const file=input.files?.[0];if(!file||uploadingImage)return;
+      const file=input.files?.[0],section=window.CNM_PERMISSIONS.keys[input.dataset.uploadPath.split('.')[0]];if(!file||uploadingImage||!panelAccess.can(section))return;
       const editor=input.closest('[data-image-editor]'),message=editor.querySelector('.image-message'),urlInput=editor.querySelector('[data-image-url]'),controls=[...document.querySelectorAll('.main button,.main input[type="file"]')].map(el=>[el,el.disabled]);
       uploadingImage=true;controls.forEach(([el])=>el.disabled=true);urlInput.readOnly=true;editor.querySelector('.image-upload').setAttribute('aria-busy','true');message.dataset.error='false';message.textContent='Enviando imagem…';
       try{
-        const url=await window.CNM_IMAGES.upload(file,{client:supabaseClient,admin:supabaseAdmin,local:localMode});
+        const url=await window.CNM_IMAGES.upload(file,{client:supabaseClient,admin:panelAccess.can(section),local:localMode,section});
         setPath(data,input.dataset.uploadPath,url);urlInput.value=url;updateImagePreview(editor,url);markDirty();message.textContent='Imagem enviada. Clique em Salvar alterações para publicar.';
       }catch(error){message.dataset.error='true';message.textContent=error.message || 'Não foi possível enviar a imagem. Tente novamente.';}
       finally{uploadingImage=false;controls.forEach(([el,disabled])=>el.disabled=disabled);urlInput.readOnly=false;editor.querySelector('.image-upload').removeAttribute('aria-busy');input.value='';}
     });
     const box=(title,id)=>`<div class="card"><h3>${title}</h3><div id="${id}"></div></div>`;
     const renderFields=(id,fields)=>document.getElementById(id).innerHTML=fields.map(f=>field(...f)).join('');
-    function setView(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));document.querySelectorAll('.menu button').forEach(b=>{b.classList.toggle('active',b.dataset.view===name);b.setAttribute('aria-current',b.dataset.view===name?'page':'false');});document.getElementById('page-title').textContent=titles[name][0];document.getElementById('page-lead').textContent=titles[name][1];if(name==='reports')refreshReport();}
+    function setView(name){if(!panelAccess.can(name)||!titles[name])return;document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));document.querySelectorAll('.menu button').forEach(b=>{b.classList.toggle('active',b.dataset.view===name);b.setAttribute('aria-current',b.dataset.view===name?'page':'false');});document.getElementById('page-title').textContent=titles[name][0];document.getElementById('page-lead').textContent=titles[name][1];if(name==='reports')refreshReport();}
     function render(){
       document.getElementById('view-profile').innerHTML=`<div class="view-title"><div><h2>Identidade da página</h2><p>Nome, texto curto e imagem principal.</p></div></div>${box('Informações do perfil','profile-fields')}`;
       renderFields('profile-fields',[['Nome','profile.name',data.profile.name],['Linha superior','profile.eyebrow',data.profile.eyebrow],['Frase curta','profile.subtitle',data.profile.subtitle,true],['Imagem (URL ou caminho local)','profile.image',data.profile.image,true]]);
@@ -193,11 +199,18 @@
       renderFields('contact-fields',[['Texto do botão','contact.label',data.contact.label],['URL','contact.url',data.contact.url,true]]);
       document.getElementById('save-status').textContent=dirty?'Alterações não salvas':'Tudo salvo';
     }
-    function setPath(obj,path,value){const p=path.split('.');let t=obj;for(let i=0;i<p.length-1;i++)t=t[p[i]];const k=p.at(-1);t[k]=k==='facts'?value.split(',').map(x=>x.trim()).filter(Boolean):value;}
-    function deletePath(obj,path){const p=path.split('.');let t=obj;for(let i=0;i<p.length-1;i++)t=t[p[i]];t.splice(Number(p.at(-1)),1);}
+    function setPath(obj,path,value){if(!panelAccess.can(window.CNM_PERMISSIONS.keys[path.split('.')[0]]))return;const p=path.split('.');let t=obj;for(let i=0;i<p.length-1;i++)t=t[p[i]];const k=p.at(-1);t[k]=k==='facts'?value.split(',').map(x=>x.trim()).filter(Boolean):value;}
+    function deletePath(obj,path){if(!panelAccess.can(window.CNM_PERMISSIONS.keys[path.split('.')[0]]))return;const p=path.split('.');let t=obj;for(let i=0;i<p.length-1;i++)t=t[p[i]];t.splice(Number(p.at(-1)),1);}
     function notify(msg){const el=document.getElementById('notice');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),4500)}
     function markDirty(){dirty=true;document.getElementById('save-status').textContent='Alterações não salvas';}
-    function showLogin(message=''){document.body.classList.add('auth-pending');document.getElementById('login-wall').hidden=false;document.getElementById('login-error').textContent=message;}
+    function applyAccess(){
+      document.querySelectorAll('[data-view]').forEach(el=>el.hidden=!panelAccess.can(el.dataset.view));
+      document.querySelectorAll('[data-jump]').forEach(el=>el.hidden=!panelAccess.can(el.dataset.jump));
+      ['import-button','export-button','import-file'].forEach(id=>document.getElementById(id).hidden=!panelAccess.native);
+      document.getElementById('save-button').hidden=!Object.values(window.CNM_PERMISSIONS.keys).some(section=>panelAccess.can(section));
+      setView(panelAccess.firstView());
+    }
+    function showLogin(message=''){panelAccess=window.CNM_PERMISSIONS.access();supabaseAdmin=false;document.body.classList.add('auth-pending');document.getElementById('login-wall').hidden=false;document.getElementById('login-error').textContent=message;}
     function openPanel(){document.body.classList.remove('auth-pending');document.getElementById('login-wall').hidden=true;document.getElementById('login-password').value='';}
     let localMode=false;
     const isLocal=['localhost','127.0.0.1','[::1]'].includes(location.hostname);
@@ -209,33 +222,67 @@
         const {data:{session}}=await supabaseClient.auth.getSession();
         if(!session){showLogin();return;}
         const {data:adminRow,error:adminError}=await supabaseClient.from('site_admins').select('user_id').eq('user_id',session.user.id).maybeSingle();
-        if(adminError||!adminRow){await supabaseClient.auth.signOut();showLogin('Esta conta ainda não tem acesso de administrador.');return;}
-        supabaseAdmin=true;document.getElementById('logout-button').style.display='inline-flex';
-        const {data:row,error}=await supabaseClient.from('site_content').select('payload').eq('id',1).maybeSingle();
-        if(!error&&row?.payload){defaults=row.payload;serverLoaded=true;}else defaults=window.CNM_DEFAULT_DATA;
+        if(adminError)throw adminError;
+        supabaseAdmin=!!adminRow;
+        if(supabaseAdmin){panelAccess=window.CNM_PERMISSIONS.access({native:true});}
+        else{
+          const {data:member,error}=await supabaseClient.from('site_members').select('active,permissions').eq('user_id',session.user.id).maybeSingle();
+          if(error||!member?.active){await supabaseClient.auth.signOut();showLogin('Esta conta não tem acesso ativo ao painel. Fale com o administrador.');return;}
+          panelAccess=window.CNM_PERMISSIONS.access(member);
+          if(!panelAccess.firstView()){await supabaseClient.auth.signOut();showLogin('Nenhuma seção foi liberada para esta conta. Fale com o administrador.');return;}
+        }
+        document.getElementById('logout-button').style.display='inline-flex';
+        const {data:row,error}=await supabaseClient.from('site_content').select('payload,updated_at').eq('id',1).maybeSingle();
+        if(error)throw error;contentRevision=row?.updated_at||null;
+        if(row?.payload){defaults=row.payload;serverLoaded=true;}else defaults=window.CNM_DEFAULT_DATA;
       }else{
         if(!localMode){document.getElementById('local-access').hidden=!isLocal;showLogin(isLocal?'':'O acesso está indisponível no momento. Tente novamente mais tarde.');return;}
+        panelAccess=window.CNM_PERMISSIONS.access({native:true});
         try{const r=await fetch('/api/content');if(r.ok){defaults=await r.json();serverLoaded=true;}}catch(_){}
         if(!serverLoaded)defaults=window.CNM_DEFAULT_DATA;
       }
       try{data=serverLoaded?structuredClone(defaults):(JSON.parse(localStorage.getItem(KEY))||structuredClone(defaults))}catch(_){data=structuredClone(defaults)}
-      if(!data.products&&data.product){data.products=[data.product];delete data.product}if(!data.stays&&data.stay){data.stays=[data.stay];delete data.stay}if(!data.stays)data.stays=[];if(!data.highlights)data.highlights=[];dirty=false;render();openPanel();refreshReport();
+      if(!data.products&&data.product){data.products=[data.product];delete data.product}if(!data.stays&&data.stay){data.stays=[data.stay];delete data.stay}if(!data.stays)data.stays=[];if(!data.highlights)data.highlights=[];dirty=false;baseline=structuredClone(data);render();applyAccess();openPanel();refreshReport();if(panelAccess.native)window.CNM_USERS.mount({client:supabaseClient,native:true,container:document.getElementById('view-users')}).catch(()=>notify('Não foi possível carregar os usuários.'));
     }
-    async function save(){if(uploadingImage){notify('Aguarde o envio da imagem antes de salvar.');return;}document.getElementById('save-status').textContent='Salvando…';if(supabaseClient&&supabaseAdmin){const {error}=await supabaseClient.from('site_content').upsert({id:1,payload:data,updated_at:new Date().toISOString()});if(error){document.getElementById('save-status').textContent='Falha ao salvar';notify('Não foi possível salvar no Supabase. Confira as políticas RLS.');return;}localStorage.setItem(KEY,JSON.stringify(data));dirty=false;document.getElementById('save-status').textContent='Tudo salvo';notify('Conteúdo salvo no Supabase. A página pública já foi atualizada.');return;}try{const r=await fetch('/api/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw new Error();localStorage.setItem(KEY,JSON.stringify(data));dirty=false;document.getElementById('save-status').textContent='Tudo salvo';notify('Conteúdo salvo no servidor local.');}catch(_){localStorage.setItem(KEY,JSON.stringify(data));document.getElementById('save-status').textContent='Salvo neste navegador';notify('Servidor indisponível. Salvei uma cópia neste navegador; exporte o JSON para publicar.');}}
+    async function save(){
+      if(uploadingImage){notify('Aguarde o envio da imagem antes de salvar.');return;}
+      const patch=panelAccess.patch(data,baseline);
+      if(!Object.keys(patch).length){notify('Nenhuma alteração para salvar nas seções permitidas.');return;}
+      const status=document.getElementById('save-status');status.textContent='Salvando…';
+      const controls=[...document.querySelectorAll('.main button,.main input,.main textarea')].map(el=>[el,el.disabled]);controls.forEach(([el])=>el.disabled=true);
+      try{
+        if(supabaseClient){
+          const {data:result,error}=await supabaseClient.rpc('save_site_sections',{patch,expected_updated_at:contentRevision});
+          if(error){
+            if(error.code==='PGRST202'&&panelAccess.native){
+              const {error:legacyError}=await supabaseClient.from('site_content').upsert({id:1,payload:data,updated_at:new Date().toISOString()});
+              if(legacyError)throw legacyError;
+              const {data:latest,error:readError}=await supabaseClient.from('site_content').select('updated_at').eq('id',1).maybeSingle();if(readError)throw readError;contentRevision=latest?.updated_at||null;
+            }else throw error;
+          }else{contentRevision=result.updated_at;}
+        }else if(localMode&&panelAccess.native){
+          const response=await fetch('/api/content',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!response.ok)throw new Error('local');
+        }else throw new Error('denied');
+        baseline=structuredClone(data);dirty=false;status.textContent='Tudo salvo';if(panelAccess.native){try{localStorage.setItem(KEY,JSON.stringify(data));}catch(_){}}notify('Alterações salvas. A página pública já foi atualizada.');
+      }catch(error){status.textContent='Falha ao salvar';notify(error.code==='40001'?'O conteúdo foi alterado por outra pessoa. Recarregue a página antes de salvar.':'Não foi possível salvar. Confira suas permissões e tente novamente.');}
+      finally{controls.forEach(([el,disabled])=>el.disabled=disabled);}
+    }
     async function getAnalytics(){
-      if(supabaseClient&&supabaseAdmin){const {data:events,error}=await supabaseClient.from('site_events').select('kind,link_id,label,lat,lon,created_at').order('created_at',{ascending:false}).limit(10000);if(error)throw error;const clicks={},sections={},locations={},visits=(events||[]).filter(x=>x.kind==='visit').length;for(const event of events||[]){if(event.kind==='click'||event.kind==='section'){const bucket=event.kind==='click'?clicks:sections,key=event.link_id||event.label,item=bucket[key]||(bucket[key]={id:key,label:event.label||key,count:0});item.count++;}if(event.kind==='location'){const key=`${Number(event.lat).toFixed(1)},${Number(event.lon).toFixed(1)}`,item=locations[key]||(locations[key]={lat:Number(event.lat),lon:Number(event.lon),count:0});item.count++;}}const clickList=Object.values(clicks).sort((a,b)=>b.count-a.count),sectionList=Object.values(sections).sort((a,b)=>b.count-a.count),locationList=Object.values(locations);return{totalVisits:visits,totalClicks:clickList.reduce((n,x)=>n+x.count,0),clicks:clickList,sections:sectionList,locations:locationList};}
+      if(!panelAccess.can('reports'))throw new Error('denied');
+      if(supabaseClient){const {data:events,error}=await supabaseClient.from('site_events').select('kind,link_id,label,lat,lon,created_at').order('created_at',{ascending:false}).limit(10000);if(error)throw error;const clicks={},sections={},locations={},visits=(events||[]).filter(x=>x.kind==='visit').length;for(const event of events||[]){if(event.kind==='click'||event.kind==='section'){const bucket=event.kind==='click'?clicks:sections,key=event.link_id||event.label,item=bucket[key]||(bucket[key]={id:key,label:event.label||key,count:0});item.count++;}if(event.kind==='location'){const key=`${Number(event.lat).toFixed(1)},${Number(event.lon).toFixed(1)}`,item=locations[key]||(locations[key]={lat:Number(event.lat),lon:Number(event.lon),count:0});item.count++;}}const clickList=Object.values(clicks).sort((a,b)=>b.count-a.count),sectionList=Object.values(sections).sort((a,b)=>b.count-a.count),locationList=Object.values(locations);return{totalVisits:visits,totalClicks:clickList.reduce((n,x)=>n+x.count,0),clicks:clickList,sections:sectionList,locations:locationList};}
       const r=await fetch('/api/analytics',{cache:'no-store'});if(!r.ok)throw new Error();return await r.json();
     }
-    async function refreshReport(){try{const a=await getAnalytics(), clicks=a.clicks||[], sections=a.sections||[], locations=a.locations||[];['total-visits','report-visits'].forEach(id=>document.getElementById(id).textContent=a.totalVisits||0);['total-clicks','report-clicks'].forEach(id=>document.getElementById(id).textContent=a.totalClicks||0);['total-locations','report-locations'].forEach(id=>document.getElementById(id).textContent=locations.reduce((s,x)=>s+x.count,0));
+    async function refreshReport(){if(!panelAccess.can('reports'))return;try{const a=await getAnalytics(), clicks=a.clicks||[], sections=a.sections||[], locations=a.locations||[];['total-visits','report-visits'].forEach(id=>document.getElementById(id).textContent=a.totalVisits||0);['total-clicks','report-clicks'].forEach(id=>document.getElementById(id).textContent=a.totalClicks||0);['total-locations','report-locations'].forEach(id=>document.getElementById(id).textContent=locations.reduce((s,x)=>s+x.count,0));
       const topClick=clicks[0],topSection=sections[0];document.getElementById('top-link').textContent=topClick?.label||'Ainda sem dados';document.getElementById('top-link-detail').textContent=topClick?`${topClick.count} clique${topClick.count===1?'':'s'} registrados`:'Os cliques aparecerão aqui.';document.getElementById('top-section').textContent=topSection?.label||'Aguardando visualizações';document.getElementById('top-section-detail').textContent=topSection?`${topSection.count} visualização${topSection.count===1?'':'ões'} qualificadas`:'Uma seção conta após ficar visível por 1 segundo.';
       const clickRows=clicks.slice(0,5).map(x=>`<tr><td>${esc(x.label)}</td><td>${x.count}</td></tr>`).join('')||'<tr><td colspan="2" class="muted">Ainda sem cliques registrados.</td></tr>';const sectionRows=sections.map(x=>`<tr><td>${esc(x.label)}</td><td>${x.count}</td></tr>`).join('')||'<tr><td colspan="2" class="muted">As visualizações aparecerão conforme as pessoas percorrem a página.</td></tr>';document.getElementById('overview-click-table').innerHTML=clickRows;document.getElementById('overview-section-table').innerHTML=sections.slice(0,5).map(x=>`<tr><td>${esc(x.label)}</td><td>${x.count}</td></tr>`).join('')||'<tr><td colspan="2" class="muted">Sem dados ainda.</td></tr>';document.getElementById('click-table').innerHTML=clicks.map(x=>`<tr><td>${esc(x.label)}</td><td>${x.count}</td></tr>`).join('')||'<tr><td colspan="2" class="muted">Ainda não há cliques registrados.</td></tr>';document.getElementById('section-table').innerHTML=sectionRows;renderMap(locations);
     }catch(_){document.getElementById('click-table').innerHTML='<tr><td colspan="2" class="muted">Relatórios indisponíveis. Confira o servidor ou as políticas RLS do Supabase.</td></tr>';document.getElementById('overview-click-table').innerHTML='<tr><td colspan="2" class="muted">Servidor de relatórios indisponível.</td></tr>';document.getElementById('overview-section-table').innerHTML='<tr><td colspan="2" class="muted">Servidor de relatórios indisponível.</td></tr>';}}
     function renderMap(locations){const el=document.getElementById('heatmap');document.getElementById('location-list').textContent=locations.length?locations.map(x=>`${x.lat.toFixed(1)}, ${x.lon.toFixed(1)} · ${x.count} visita(s)`).join('  |  '):'Nenhuma região compartilhada até agora.';if(!window.L){el.innerHTML='<div style="padding:20px;font-size:11px;color:#666">Mapa indisponível sem conexão. As regiões permanecem listadas abaixo.</div>';return;}if(!map){map=L.map(el,{scrollWheelZoom:false}).setView([-12,-35],3);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);}if(map._heat){map.removeLayer(map._heat);map._heat=null;}if(locations.length&&L.heatLayer){map._heat=L.heatLayer(locations.map(x=>[x.lat,x.lon,Math.min(1,.25+x.count/10)]),{radius:32,blur:22,maxZoom:8,gradient:{0.25:'#ffd1bd',0.55:'#f36b35',1:'#9d2600'}}).addTo(map);}setTimeout(()=>map.invalidateSize(),50);}
     document.getElementById('menu').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)setView(b.dataset.view)});
     document.addEventListener('click',e=>{const j=e.target.closest('[data-jump]');if(j)setView(j.dataset.jump);});
-    document.querySelector('.main').addEventListener('input',e=>{if(e.target.dataset.path){setPath(data,e.target.dataset.path,e.target.value);dirty=true;document.getElementById('save-status').textContent='Alterações não salvas';if(e.target.matches('[data-image-url]')){const editor=e.target.closest('[data-image-editor]');updateImagePreview(editor,e.target.value);editor.querySelector('.image-message').textContent='';}}});
+    document.querySelector('.main').addEventListener('input',e=>{if(e.target.dataset.path&&panelAccess.can(window.CNM_PERMISSIONS.keys[e.target.dataset.path.split('.')[0]])){setPath(data,e.target.dataset.path,e.target.value);dirty=true;document.getElementById('save-status').textContent='Alterações não salvas';if(e.target.matches('[data-image-url]')){const editor=e.target.closest('[data-image-editor]');updateImagePreview(editor,e.target.value);editor.querySelector('.image-message').textContent='';}}});
     document.querySelector('.main').addEventListener('click',e=>{
       if(uploadingImage)return;
+      const view=e.target.closest('.view');if(view&&!panelAccess.can(view.id.replace('view-','')))return;
       const pick=e.target.closest('[data-pick-image]');if(pick){document.getElementById(pick.dataset.pickImage+'-file').click();return;}
       const clear=e.target.closest('[data-clear-image]');if(clear){const editor=clear.closest('[data-image-editor]'),input=editor.querySelector('[data-image-url]');input.value='';setPath(data,input.dataset.path,'');updateImagePreview(editor,'');editor.querySelector('.image-message').dataset.error='false';editor.querySelector('.image-message').textContent='Imagem removida. Salve as alterações para publicar.';markDirty();return;}
       const rm=e.target.closest('[data-remove]');if(rm){deletePath(data,rm.dataset.remove);render();markDirty();return;}
@@ -247,9 +294,9 @@
       if(e.target.matches('[data-add-shop]')){data.products[Number(e.target.dataset.addShop)].links.push({label:'Nova loja',url:''});render();markDirty();}
     });
     document.getElementById('save-button').onclick=save;document.getElementById('refresh-report').onclick=refreshReport;
-    document.getElementById('export-button').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='conteudo.json';a.click();URL.revokeObjectURL(a.href);notify('JSON exportado.');};
-    document.getElementById('import-button').onclick=()=>document.getElementById('import-file').click();
-    document.getElementById('import-file').onchange=async e=>{try{data=JSON.parse(await e.target.files[0].text());if(!data.products&&data.product){data.products=[data.product];delete data.product}data.highlights=data.highlights||[];render();markDirty();notify('JSON carregado. Clique em Salvar para aplicar.');}catch(_){notify('Arquivo JSON inválido.')}};
+    document.getElementById('export-button').onclick=()=>{if(!panelAccess.native)return;const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='conteudo.json';a.click();URL.revokeObjectURL(a.href);notify('JSON exportado.');};
+    document.getElementById('import-button').onclick=()=>{if(panelAccess.native)document.getElementById('import-file').click();};
+    document.getElementById('import-file').onchange=async e=>{if(!panelAccess.native)return;try{data=JSON.parse(await e.target.files[0].text());if(!data.products&&data.product){data.products=[data.product];delete data.product}data.highlights=data.highlights||[];render();applyAccess();markDirty();notify('JSON carregado. Clique em Salvar para aplicar.');}catch(_){notify('Arquivo JSON inválido.')}};
     document.getElementById('password-toggle').onclick=()=>{const input=document.getElementById('login-password'),button=document.getElementById('password-toggle'),visible=input.type==='password';input.type=visible?'text':'password';button.textContent=visible?'Ocultar':'Mostrar';button.setAttribute('aria-label',visible?'Ocultar senha':'Mostrar senha');button.setAttribute('aria-pressed',String(visible));};
     document.getElementById('local-access').onclick=async()=>{if(!isLocal||supabaseClient)return;localMode=true;await load();};
     document.getElementById('login-form').addEventListener('submit',async e=>{
