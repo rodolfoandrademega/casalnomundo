@@ -4,10 +4,14 @@ create table if not exists public.site_members (
   user_id uuid primary key references auth.users(id) on delete cascade,
   name text not null check (char_length(name) between 1 and 100),
   permissions text[] not null default '{}'
-    check (permissions <@ array['profile','stay','destinations','products','highlights','socials','reports']::text[]),
+    check (permissions <@ array['profile','stay','destinations','products','highlights','socials','reports','users']::text[]),
   active boolean not null default true,
   created_at timestamptz not null default now()
 );
+-- Keep existing installations aligned when this migration is reapplied.
+alter table public.site_members drop constraint if exists site_members_permissions_check;
+alter table public.site_members add constraint site_members_permissions_check
+  check (permissions <@ array['profile','stay','destinations','products','highlights','socials','reports','users']::text[]);
 alter table public.site_members enable row level security;
 revoke all on public.site_members from anon, authenticated;
 grant select on public.site_members to authenticated;

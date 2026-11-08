@@ -20,7 +20,7 @@ test('PostgreSQL enforces section permissions, native-only management and revoca
    grant insert on storage.objects to authenticated;
    grant usage on sequence storage.objects_id_seq to authenticated;
   `);
-  for(let pass=0;pass<2;pass++)for(const file of ['schema.sql','storage.sql','access.sql'])await db.exec(fs.readFileSync(path.join(__dirname,'../supabase',file),'utf8'));
+  for(let pass=0;pass<2;pass++)for(const file of ['schema.sql','storage.sql','access.sql','access-users.sql'])await db.exec(fs.readFileSync(path.join(__dirname,'../supabase',file),'utf8'));
   const native='00000000-0000-0000-0000-000000000001',editor='00000000-0000-0000-0000-000000000002',viewer='00000000-0000-0000-0000-000000000003';
   for(const [id,email] of [[native,'native@example.com'],[editor,'editor@example.com'],[viewer,'viewer@example.com']])await db.query('insert into auth.users(id,email) values($1,$2)',[id,email]);
   await db.query('insert into public.site_admins(user_id) values($1)',[native]);
@@ -28,10 +28,11 @@ test('PostgreSQL enforces section permissions, native-only management and revoca
   const user=async id=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');};
   await user(native);
   assert.equal((await db.query('select * from public.list_site_members()')).rows.length,3);
-  await db.query('select public.update_site_member($1,$2,$3)',[editor,['profile'],true]);
+  await db.query('select public.update_site_member($1,$2,$3)',[editor,['profile','users'],true]);
   await db.query('select public.update_site_member($1,$2,$3)',[viewer,['reports'],true]);
   await assert.rejects(db.query('select public.update_site_member($1,$2,$3)',[native,[],false]),/Native access/);
   await user(editor);
+  assert.equal((await db.query("select public.has_site_permission('users') as allowed")).rows[0].allowed,true);
   assert.equal((await db.query('select * from public.site_members')).rows.length,1);
   assert.equal((await db.query('select * from public.site_events')).rows.length,0);
   assert.equal((await db.query(`update public.site_content set payload='{}' where id=1 returning id`)).rows.length,0);

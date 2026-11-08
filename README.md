@@ -85,7 +85,7 @@ Para ativar:
 3. Faça um novo deploy após configurar a variável. O endpoint Node `/api/users` só funciona na Vercel (ou em `vercel dev`); o servidor Python oferece a prévia do painel e edição local, sem provisionar contas.
 4. Entre com um acesso nativo e abra **Usuários e permissões**. Preencha nome, e-mail e senha inicial (12–128 caracteres), escolha as seções e clique em **Criar cadastro**. Não há cadastro público nem envio de e-mail automático. A sessão do administrador é preservada.
 
-Permissões disponíveis: Perfil, Hospedagens, Destinos, Produtos, Destaques, Redes e contato e Relatórios. As seções de conteúdo permitem edição e upload de imagens na seção correspondente; Relatórios libera a visão geral e os relatórios, sem edição. Importar/exportar JSON e gerenciar usuários são exclusivos de acessos nativos, sem opção de delegação. Para suspender um cadastro, desmarque **Acesso ativo** e salve suas permissões. Cadastros existentes no Supabase sem acesso ao painel aparecem na lista e podem receber permissões por um nativo.
+Permissões disponíveis: Perfil, Hospedagens, Destinos, Produtos, Destaques, Redes e contato, Relatórios e Criar usuários. As seções de conteúdo permitem edição e upload de imagens na seção correspondente; Relatórios libera a visão geral e os relatórios, sem edição. Importar/exportar JSON e alterar ou desativar acessos existentes são exclusivos dos nativos. A permissão **Criar usuários** pode ser liberada por um nativo: ela permite cadastrar novas contas apenas com as seções que o criador já tem, sem conceder a própria permissão de criar usuários. Para suspender um cadastro, desmarque **Acesso ativo** e salve suas permissões. Cadastros existentes no Supabase sem acesso ao painel aparecem na lista e podem receber permissões por um nativo.
 
 As regras são aplicadas no PostgreSQL: usuários limitados não podem escrever diretamente em `site_content`, modificar `site_members` ou promover-se a nativos. A função `save_site_sections` valida cada seção e sua versão antes de mesclar as alterações. A revogação bloqueia novas gravações, leituras de relatórios e uploads, mesmo se uma tela antiga continuar aberta. Imagens publicadas e conteúdo público do site continuam públicos.
 
@@ -98,3 +98,9 @@ node --test tests/permissions.test.cjs tests/users-api.test.cjs tests/image-uplo
 ```
 
 Para executar o teste de regras em PostgreSQL/WASM sem alterar as dependências do site, instale `@electric-sql/pglite` em um diretório temporário e execute `PGLITE_MODULE=/caminho/node_modules/@electric-sql/pglite node --test tests/access-db.test.cjs`. O teste reaplica as migrações e cobre edição por seção, bloqueio de promoção, relatórios, uploads, concorrência e revogação. Ele é ignorado quando `PGLITE_MODULE` não está definido.
+
+### Delegar criação de usuários
+
+Em instalações que já executaram a versão anterior de `access.sql`, execute somente [`supabase/access-users.sql`](supabase/access-users.sql) uma vez (ou reaplique `access.sql` atualizado). A migração libera a nova opção no banco sem concedê-la automaticamente a ninguém.
+
+Com um acesso nativo, abra **Usuários e permissões**, marque **Criar usuários** no cadastro desejado e salve. Libere também as seções que esse cadastro poderá conceder às novas contas. O criador verá o formulário de cadastro com apenas essas seções. A API verifica seu acesso ativo e recusa concessões maiores, incluindo a tentativa de delegar **Criar usuários**. Consultar todos os usuários, alterar permissões existentes, desativar contas e importar/exportar JSON continuam exclusivos dos nativos.

@@ -11,13 +11,23 @@ module.exports=async function handler(req,res) {
   try {
     // Verify the caller with their own JWT before using any privileged credential.
     const check=await request('/rest/v1/rpc/is_site_admin',{method:'POST',headers:{apikey:publicKey,Authorization:authorization,'Content-Type':'application/json'},body:'{}'});
-    if(!check.ok || await check.json()!==true)return res.status(403).json({error:'Somente administradores nativos podem criar usuários.'});
+    if(!check.ok)return res.status(403).json({error:'Confira seu acesso para criar usuários.'});
+    const native=await check.json()===true;
+    let callerPermissions=[];
+    if(!native){
+      const memberResponse=await request('/rest/v1/site_members?select=active,permissions',{headers:{apikey:publicKey,Authorization:authorization}});
+      const rows=memberResponse.ok?await memberResponse.json():[];
+      const member=Array.isArray(rows)&&rows.length===1?rows[0]:null;
+      if(!member?.active || !member.permissions?.includes('users'))return res.status(403).json({error:'Sua conta não tem permissão para criar usuários.'});
+      callerPermissions=member.permissions;
+    }
     let input;
     try {
       const raw=typeof req.body==='string'?req.body:JSON.stringify(req.body || null);
       if(Buffer.byteLength(raw)>16384)throw new Error('Dados de cadastro muito grandes.');
       input=validateMember(JSON.parse(raw));
     }catch(error){return res.status(400).json({error:error instanceof SyntaxError?'Dados de cadastro inválidos.':error.message});}
+    if(!native&&input.permissions.some(permission=>permission==='users'||!callerPermissions.includes(permission)))return res.status(403).json({error:'Você só pode liberar as seções do seu próprio acesso. A permissão Criar usuários só pode ser concedida por um nativo.'});
     const secret=process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
     if(!secret)return res.status(503).json({error:'Configure a chave de servidor do Supabase na Vercel para criar cadastros.'});
     // A new secret key belongs in apikey, never Authorization. Legacy JWTs need both.
@@ -35,7 +45,7 @@ module.exports=async function handler(req,res) {
     const member=await request('/rest/v1/site_members',{method:'POST',headers,body:JSON.stringify({user_id:user.id,name:input.name,permissions:input.permissions,active:true})});
     if(!member.ok){
       // No permissions were granted. Keep the Auth record instead of deleting an account.
-      return res.status(503).json({error:'A conta foi criada sem acesso ao painel. Atualize a lista e salve as permissões para liberá-la.',unassignedUserId:user.id});
+      return res.status(503).json({error:native?'A conta foi criada sem acesso ao painel. Atualize a lista e salve as permissões para liberá-la.':'A conta foi criada sem acesso ao painel. Peça a um administrador nativo para liberar as permissões.',unassignedUserId:user.id});
     }
     return res.status(201).json({user_id:user.id});
   }catch(_){return res.status(503).json({error:'Não foi possível concluir o cadastro. Verifique a conexão e confira a lista de usuários antes de tentar novamente.'});}

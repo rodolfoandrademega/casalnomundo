@@ -242,7 +242,7 @@
         if(!serverLoaded)defaults=window.CNM_DEFAULT_DATA;
       }
       try{data=serverLoaded?structuredClone(defaults):(JSON.parse(localStorage.getItem(KEY))||structuredClone(defaults))}catch(_){data=structuredClone(defaults)}
-      if(!data.products&&data.product){data.products=[data.product];delete data.product}if(!data.stays&&data.stay){data.stays=[data.stay];delete data.stay}if(!data.stays)data.stays=[];if(!data.highlights)data.highlights=[];dirty=false;baseline=structuredClone(data);render();applyAccess();openPanel();refreshReport();if(panelAccess.native)window.CNM_USERS.mount({client:supabaseClient,native:true,container:document.getElementById('view-users')}).catch(()=>notify('Não foi possível carregar os usuários.'));
+      if(!data.products&&data.product){data.products=[data.product];delete data.product}if(!data.stays&&data.stay){data.stays=[data.stay];delete data.stay}if(!data.stays)data.stays=[];if(!data.highlights)data.highlights=[];dirty=false;baseline=structuredClone(data);render();applyAccess();openPanel();refreshReport();if(panelAccess.can('users'))window.CNM_USERS.mount({client:supabaseClient,native:panelAccess.native,canCreate:panelAccess.can('users'),permissions:Object.keys(window.CNM_PERMISSIONS.sections).filter(section=>panelAccess.can(section)),container:document.getElementById('view-users')}).catch(()=>notify('Não foi possível carregar os usuários.'));
     }
     async function save(){
       if(uploadingImage){notify('Aguarde o envio da imagem antes de salvar.');return;}

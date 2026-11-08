@@ -1,5 +1,5 @@
 (() => {
-  const sections={profile:'Perfil',stay:'Hospedagens',destinations:'Destinos',products:'Produtos',highlights:'Destaques',socials:'Redes e contato',reports:'Relatórios'};
+  const sections={profile:'Perfil',stay:'Hospedagens',destinations:'Destinos',products:'Produtos',highlights:'Destaques',socials:'Redes e contato',reports:'Relatórios',users:'Criar usuários'};
   const keys={profile:'profile',stays:'stay',destinations:'destinations',products:'products',highlights:'highlights',socials:'socials',contact:'socials'};
   function access({native=false,active=false,permissions=[]}={}) {
     const granted=new Set(active?permissions.filter(key=>Object.hasOwn(sections,key)):[]);
