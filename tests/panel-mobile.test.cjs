@@ -71,6 +71,7 @@ async function panelSession(options){
  window.structuredClone=structuredClone;window.fetch=async()=>({ok:false});
  for(const file of ['defaults.js','permissions.js','image-upload.js','megabio-analytics.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
  window.CNM_USERS={mount:async()=>{}};
+ if(options.mapError)window.L={map(){throw new Error('Map container is not measurable');}};
  window.CNM_SUPABASE_CLIENT={auth:{getSession:async()=>({data:{session:{user:{id:'test-id'}}}})},from(table){return {
   select(){return this},eq(){return this},order(){return this},lte(key,value){this.end=value;return this},gte(key,value){this.start=value;return this},async range(first,last){analyticsReads.push({first,last,start:this.start,end:this.end});return options.analyticsError?{error:{message:'unavailable'}}:{data:(options.events||[]).slice(first,last+1)}},async limit(){return {data:[]}},
   async maybeSingle(){return {data:table==='site_admins'?(options.native?{user_id:'test-id'}:null):table==='site_members'?{active:true,permissions:options.permissions||[]}:table==='site_content'?{payload:window.CNM_DEFAULT_DATA,updated_at:'2026-11-08T12:00:00Z'}:null};}
@@ -107,5 +108,36 @@ test('dashboard paginates analytics beyond one thousand rows and applies the sel
 test('analytics error is shown as unavailable, not as a zero-result recommendation',{skip:!enabled},async()=>{
  const {dom,node}=await panelSession({native:true,analyticsError:true});try{
   assert.equal(node('total-visits').textContent,'—');assert.match(node('assistant-answer').textContent,/Não consegui/);
+ }finally{dom.window.close();}
+});
+
+test('map failure never clears successful overview analytics or assistant data',{skip:!enabled},async()=>{
+ const events=[{id:2,kind:'visit',created_at:new Date().toISOString()},{id:1,kind:'location',lat:-7.1,lon:-34.8,created_at:new Date().toISOString()}];
+ const {dom,window,node}=await panelSession({native:true,events,mapError:true});try{
+  assert.equal(node('total-visits').textContent,'1');assert(!node('assistant-answer').textContent.includes('Não consegui'));
+  Object.defineProperty(node('heatmap'),'clientWidth',{value:300});Object.defineProperty(node('heatmap'),'clientHeight',{value:300});
+  window.document.querySelector('[data-view="reports"]').click();await new Promise(setImmediate);
+  assert.equal(node('total-visits').textContent,'1');assert.equal(node('report-visits').textContent,'1');
+  assert.match(node('heatmap').textContent,/Mapa indisponível/);assert.match(node('location-list').textContent,/-7.1/);
+ }finally{dom.window.close();}
+});
+test('overview never initializes Leaflet while the reports view is hidden',{skip:!enabled},async()=>{
+ const {dom,node,window}=await panelSession({native:true,events:[{id:1,kind:'visit',created_at:new Date().toISOString()}]});try{
+  let attempts=0;window.L={map(){attempts++;throw new Error('must not initialize a hidden map');}};
+  node('refresh-overview').click();await new Promise(setImmediate);
+  assert.equal(attempts,0);assert.equal(node('total-visits').textContent,'1');
+ }finally{dom.window.close();}
+});
+test('map is created only for measurable reports and removed when leaving the tab',{skip:!enabled},async()=>{
+ const events=[{id:1,kind:'visit',created_at:new Date().toISOString()}];
+ const {dom,window,node}=await panelSession({native:true,events});try{
+  let created=0,removed=0,resized=0;
+  const instance={setView(){return this},invalidateSize(){resized++},remove(){removed++}};
+  window.L={map(){created++;return instance},tileLayer:()=>({addTo(){}})};
+  Object.defineProperty(node('heatmap'),'clientWidth',{value:300});Object.defineProperty(node('heatmap'),'clientHeight',{value:300});
+  window.document.querySelector('[data-view="reports"]').click();await new Promise(setImmediate);
+  assert.equal(created,1);assert.equal(resized,1);assert.equal(node('total-visits').textContent,'1');
+  window.document.querySelector('[data-view="overview"]').click();assert.equal(removed,1);
+  node('refresh-overview').click();await new Promise(setImmediate);assert.equal(created,1);assert.equal(node('total-visits').textContent,'1');
  }finally{dom.window.close();}
 });

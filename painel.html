@@ -218,7 +218,7 @@
     });
     const box=(title,id)=>`<div class="card"><h3>${title}</h3><div id="${id}"></div></div>`;
     const renderFields=(id,fields)=>document.getElementById(id).innerHTML=fields.map(f=>field(...f)).join('');
-    function setView(name){if(!panelAccess.can(name)||!titles[name])return;document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));document.querySelectorAll('.menu button').forEach(b=>{b.classList.toggle('active',b.dataset.view===name);b.setAttribute('aria-current',b.dataset.view===name?'page':'false');});document.getElementById('page-title').textContent=titles[name][0];document.getElementById('page-lead').textContent=titles[name][1];window.CNM_MOBILE.sectionChanged(titles[name][0]);if(name==='reports')refreshReport();}
+    function setView(name){if(!panelAccess.can(name)||!titles[name])return;if(name!=='reports')disposeMap();document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));document.querySelectorAll('.menu button').forEach(b=>{b.classList.toggle('active',b.dataset.view===name);b.setAttribute('aria-current',b.dataset.view===name?'page':'false');});document.getElementById('page-title').textContent=titles[name][0];document.getElementById('page-lead').textContent=titles[name][1];window.CNM_MOBILE.sectionChanged(titles[name][0]);if(name==='reports')refreshReport();}
     function render(){
       document.getElementById('view-profile').innerHTML=`<div class="view-title"><div><h2>Identidade da página</h2><p>Nome, texto curto e imagem principal.</p></div></div>${box('Informações do perfil','profile-fields')}`;
       renderFields('profile-fields',[['Nome','profile.name',data.profile.name],['Linha superior','profile.eyebrow',data.profile.eyebrow],['Frase curta','profile.subtitle',data.profile.subtitle,true],['Imagem (URL ou caminho local)','profile.image',data.profile.image,true]]);
@@ -251,7 +251,7 @@
     function clearReport(){
       ['report-visits','report-clicks','report-locations'].forEach(id=>document.getElementById(id).textContent='—');
       ['click-table','section-table'].forEach(id=>document.getElementById(id).innerHTML='<tr><td colspan="2">Relatórios indisponíveis. Tente atualizar novamente.</td></tr>');
-      document.getElementById('location-list').textContent='';if(map?._heat){map.removeLayer(map._heat);map._heat=null;}
+      document.getElementById('location-list').textContent='';disposeMap();
     }
     function showLogin(message=''){analyticsRequest++;dashboard.fail();clearReport();window.CNM_MOBILE.close({restoreFocus:false});panelAccess=window.CNM_PERMISSIONS.access();supabaseAdmin=false;document.body.classList.add('auth-pending');document.getElementById('login-wall').hidden=false;document.getElementById('login-error').textContent=message;}
     function openPanel(){document.body.classList.remove('auth-pending');document.getElementById('login-wall').hidden=true;document.getElementById('login-password').value='';}
@@ -340,7 +340,23 @@
         renderMap(locations);
       }catch(_){if(request!==analyticsRequest)return;dashboard.fail();clearReport();}
     }
-    function renderMap(locations){const el=document.getElementById('heatmap');document.getElementById('location-list').textContent=locations.length?locations.map(x=>`${x.lat.toFixed(1)}, ${x.lon.toFixed(1)} · ${x.count} visita(s)`).join('  |  '):'Nenhuma região compartilhada até agora.';if(!window.L){el.innerHTML='<div style="padding:20px;font-size:11px;color:#666">Mapa indisponível sem conexão. As regiões permanecem listadas abaixo.</div>';return;}if(!map){map=L.map(el,{scrollWheelZoom:false}).setView([-12,-35],3);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);}if(map._heat){map.removeLayer(map._heat);map._heat=null;}if(locations.length&&L.heatLayer){map._heat=L.heatLayer(locations.map(x=>[x.lat,x.lon,Math.min(1,.25+x.count/10)]),{radius:32,blur:22,maxZoom:8,gradient:{0.25:'#ffd1bd',0.55:'#f36b35',1:'#9d2600'}}).addTo(map);}setTimeout(()=>map.invalidateSize(),50);}
+    function disposeMap(){if(map){try{map.remove();}catch(_){}map=null;}}
+    function renderMap(locations){
+      const el=document.getElementById('heatmap');
+      const regions=locations.filter(item=>Number.isFinite(Number(item.lat))&&Number.isFinite(Number(item.lon)));
+      document.getElementById('location-list').textContent=regions.length?regions.map(item=>`${Number(item.lat).toFixed(1)}, ${Number(item.lon).toFixed(1)} · ${item.count} visita(s)`).join('  |  '):'Nenhuma região compartilhada até agora.';
+      // Leaflet heatmaps cannot draw on a hidden/zero-sized canvas. Keep this
+      // optional visualization separate from successfully loaded analytics.
+      if(!document.getElementById('view-reports').classList.contains('active'))return;
+      if(!el.clientWidth||!el.clientHeight)return;
+      if(!window.L){el.innerHTML='<p class="hint" style="padding:20px">Mapa indisponível sem conexão. As regiões permanecem listadas abaixo.</p>';return;}
+      try{
+        if(!map){map=L.map(el,{scrollWheelZoom:false}).setView([-12,-35],3);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);}
+        if(map._heat){map.removeLayer(map._heat);map._heat=null;}
+        map.invalidateSize({pan:false});
+        if(regions.length&&L.heatLayer){map._heat=L.heatLayer(regions.map(item=>[Number(item.lat),Number(item.lon),Math.min(1,.25+item.count/10)]),{radius:32,blur:22,maxZoom:8,gradient:{0.25:'#ffd1bd',0.55:'#f36b35',1:'#9d2600'}}).addTo(map);}
+      }catch(_){disposeMap();el.innerHTML='<p class="hint" style="padding:20px">Mapa indisponível neste momento. Os dados e as regiões continuam disponíveis.</p>';}
+    }
     document.getElementById('menu').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)setView(b.dataset.view)});
     document.addEventListener('click',e=>{const j=e.target.closest('[data-jump]');if(j)setView(j.dataset.jump);});
     document.querySelector('.main').addEventListener('input',e=>{if(e.target.dataset.path&&panelAccess.can(window.CNM_PERMISSIONS.keys[e.target.dataset.path.split('.')[0]])){setPath(data,e.target.dataset.path,e.target.value);dirty=true;document.getElementById('save-status').textContent='Alterações não salvas';if(e.target.matches('[data-image-url]')){const editor=e.target.closest('[data-image-editor]');updateImagePreview(editor,e.target.value);editor.querySelector('.image-message').textContent='';}}});
