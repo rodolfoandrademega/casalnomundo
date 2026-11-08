@@ -104,3 +104,11 @@ Para executar o teste de regras em PostgreSQL/WASM sem alterar as dependências 
 Em instalações que já executaram a versão anterior de `access.sql`, execute somente [`supabase/access-users.sql`](supabase/access-users.sql) uma vez (ou reaplique `access.sql` atualizado). A migração libera a nova opção no banco sem concedê-la automaticamente a ninguém.
 
 Com um acesso nativo, abra **Usuários e permissões**, marque **Criar usuários** no cadastro desejado e salve. Libere também as seções que esse cadastro poderá conceder às novas contas. O criador verá o formulário de cadastro com apenas essas seções. A API verifica seu acesso ativo e recusa concessões maiores, incluindo a tentativa de delegar **Criar usuários**. Consultar todos os usuários, alterar permissões existentes, desativar contas e importar/exportar JSON continuam exclusivos dos nativos.
+
+## Painel no celular
+
+Até 760 px, o painel usa um cabeçalho com o botão **Menu**, que abre a navegação lateral. O menu fecha ao escolher uma seção, tocar no fundo ou pressionar Escape; o foco fica dentro dele enquanto está aberto. Os itens continuam respeitando as permissões do usuário. A barra inferior mantém **Salvar alterações** e o estado de salvamento visíveis; importar/exportar JSON fica em **Mais ações**, somente para nativos. Contas sem edição de conteúdo não exibem essa barra.
+
+Formulários usam uma coluna, campos com fonte de 16 px e controles maiores para toque. O layout considera as áreas de segurança do celular. A navegação desktop é preservada ao aumentar a largura.
+
+Os testes do menu usam um DOM em memória e não substituem uma conferência visual em aparelho real. Para executá-los, instale `jsdom` em um diretório temporário e use `JSDOM_MODULE=/caminho/node_modules/jsdom node --test tests/panel-mobile.test.cjs`.
