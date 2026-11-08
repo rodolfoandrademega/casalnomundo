@@ -3,7 +3,11 @@
   const esc = (value = '') => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeUrl = value => /^(https?:\/\/|\.\/|\/)/i.test(String(value || '')) ? String(value) : '#';
   const image = (src, alt, cls = '') => `<img${cls ? ` class="${esc(cls)}"` : ''} src="${esc(safeUrl(src))}" alt="${esc(alt || '')}" loading="lazy">`;
-  const anchor = (url, content, cls = '', trackId = '', label = '') => `<a${cls ? ` class="${esc(cls)}"` : ''} href="${esc(safeUrl(url))}"${trackId ? ` data-track="${esc(trackId)}" data-label="${esc(label)}"` : ''} target="_blank" rel="noopener">${content}</a>`;
+  const seenPromotions=new Set();let stopPromotionObserver=()=>{};
+  const anchor = (url, content, cls = '', trackId = '', label = '') => {
+    const section=window.CNM_ANALYTICS.sectionForLegacy(trackId),promotion=window.CNM_ANALYTICS.promotionId(section,url),id=promotion||trackId;
+    return `<a${cls ? ` class="${esc(cls)}"` : ''} href="${esc(safeUrl(url))}"${id ? ` data-track="${esc(id)}" data-label="${esc(label)}"` : ''}${promotion?` data-promotion="${esc(promotion)}"`:''} target="_blank" rel="noopener">${content}</a>`;
+  };
 
   // Brand SVGs: Simple Icons (CC0), https://github.com/simple-icons/simple-icons
   const socialIcons = {
@@ -39,6 +43,7 @@
     document.querySelector('#socials').innerHTML = (d.socials || []).map((soc,i) => anchor(soc.url, `${socialIcon(soc)}<span class="social-label">${esc(soc.label)}</span>${socialArrow}`, 'social', `social_${i}`, soc.label)).join('');
     const contact = d.contact || {};
     document.querySelector('#contact').innerHTML = anchor(contact.url, `${esc(contact.label || 'Contato')} ↗`, 'contact', 'contact', contact.label);
+    stopPromotionObserver();stopPromotionObserver=window.CNM_PROMOTION_VIEWS.watch(document,track,seenPromotions);
   }
 
   async function init() {

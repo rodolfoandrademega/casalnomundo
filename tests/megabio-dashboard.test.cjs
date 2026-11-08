@@ -1,0 +1,31 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+const enabled=!!process.env.JSDOM_MODULE;
+function fixture(){const {JSDOM}=require(process.env.JSDOM_MODULE);return new JSDOM(fs.readFileSync(path.join(__dirname,'../painel.html'),'utf8'),{runScripts:'outside-only',url:'https://example.com/admin'});}
+test('dashboard uses real counts, answers prompts, respects editing permissions and clears stale advice on error',{skip:!enabled},()=>{
+ const dom=fixture(),{window}=dom;try{
+  window.eval(fs.readFileSync(path.join(__dirname,'../megabio-analytics.js'),'utf8'));
+  const api=window.CNM_ANALYTICS,root=window.document.getElementById('view-overview');let refreshes=0,periodChanges=0;
+  const dashboard=api.dashboard(root,{onRefresh:()=>refreshes++,onPeriodChange:()=>periodChanges++,canEdit:()=>false});
+  const id=api.promotionId('highlights','https://example.com/promo'),report=api.fromEvents([{kind:'visit',created_at:new Date().toISOString()},{kind:'click',link_id:id,label:'Oferta <img src=x onerror=alert(1)>'},{kind:'section',link_id:'view:'+id,label:'Oferta'}]);
+  dashboard.paint(report,{content:{highlights:[{url:'https://example.com/promo',title:'Oferta <script>bad</script>'}]}});
+  assert.equal(root.querySelector('#total-visits').textContent,'1');assert.equal(root.querySelector('#total-promo-views').textContent,'1');
+  assert.equal(root.querySelectorAll('.ranking-edit').length,0);assert.equal(root.querySelectorAll('#promotion-ranking script,#promotion-ranking img').length,0);
+  root.querySelector('[data-assistant-topic="views"]').click();assert.match(root.querySelector('#assistant-answer').textContent,/exibições qualificadas/);
+  root.querySelector('#refresh-overview').click();assert.equal(refreshes,1);
+  root.querySelector('#analytics-period').value='30';root.querySelector('#analytics-period').dispatchEvent(new window.Event('change'));assert.equal(periodChanges,1);
+  dashboard.fail();assert.equal(root.querySelector('#total-visits').textContent,'—');assert.match(root.querySelector('#assistant-answer').textContent,/Não consegui/);assert.equal(root.querySelectorAll('.ranking-edit').length,0);
+ }finally{dom.window.close();}
+});
+test('public page renders stable measured links and preserves existing visits and click events',{skip:!enabled},async()=>{
+ const {JSDOM}=require(process.env.JSDOM_MODULE),dom=new JSDOM(fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),{runScripts:'outside-only',url:'https://example.com/'}),{window}=dom,sent=[];
+ try{
+  for(const file of ['defaults.js','megabio-analytics.js','promotion-observer.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
+  window.CNM_SUPABASE_CLIENT={from(table){return {select(){return this},eq(){return this},maybeSingle:async()=>({data:{payload:window.CNM_DEFAULT_DATA}}),insert:async row=>{assert.equal(table,'site_events');sent.push(row);return {error:null}}}}};
+  window.eval(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'));await new Promise(setImmediate);
+  const links=[...window.document.querySelectorAll('[data-promotion]')];assert(links.length>0);assert(sent.some(event=>event.kind==='visit'));
+  const first=links[0],before=first.dataset.promotion;assert(before.startsWith('promo_'));assert.equal(first.dataset.track,before);
+  first.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));await new Promise(setImmediate);assert(sent.some(event=>event.kind==='click'&&event.link_id===before));
+  const content=JSON.parse(JSON.stringify(window.CNM_DEFAULT_DATA));content.stays.reverse();window.CasalPage.render(content);
+  assert(window.document.querySelector(`[data-promotion="${before}"]`));
+ }finally{dom.window.close();}
+});

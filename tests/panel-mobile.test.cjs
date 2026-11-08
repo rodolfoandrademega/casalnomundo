@@ -67,12 +67,12 @@ test('backdrop closes the drawer and JSON actions collapse after selection',{ski
  }finally{dom.window.close();}
 });
 async function panelSession(options){
- const result=fixture(),{window}=result;
+ const result=fixture(),{window}=result;const analyticsReads=[];result.analyticsReads=analyticsReads;
  window.structuredClone=structuredClone;window.fetch=async()=>({ok:false});
- for(const file of ['defaults.js','permissions.js','image-upload.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
+ for(const file of ['defaults.js','permissions.js','image-upload.js','megabio-analytics.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
  window.CNM_USERS={mount:async()=>{}};
  window.CNM_SUPABASE_CLIENT={auth:{getSession:async()=>({data:{session:{user:{id:'test-id'}}}})},from(table){return {
-  select(){return this},eq(){return this},order(){return this},async limit(){return {data:[]}},
+  select(){return this},eq(){return this},order(){return this},lte(key,value){this.end=value;return this},gte(key,value){this.start=value;return this},async range(first,last){analyticsReads.push({first,last,start:this.start,end:this.end});return options.analyticsError?{error:{message:'unavailable'}}:{data:(options.events||[]).slice(first,last+1)}},async limit(){return {data:[]}},
   async maybeSingle(){return {data:table==='site_admins'?(options.native?{user_id:'test-id'}:null):table==='site_members'?{active:true,permissions:options.permissions||[]}:table==='site_content'?{payload:window.CNM_DEFAULT_DATA,updated_at:'2026-11-08T12:00:00Z'}:null};}
  }}};
  window.eval([...window.document.querySelectorAll('script:not([src])')].at(-1).textContent);
@@ -92,4 +92,20 @@ test('restricted editor keeps only permitted mobile menu sections and cannot rev
 test('reports-only member has no save toolbar, while native access retains JSON actions',{skip:!enabled},async()=>{
  let session=await panelSession({permissions:['reports']});try{assert(session.node('save-toolbar').hidden);assert(session.node('data-actions').hidden);}finally{session.dom.window.close();}
  session=await panelSession({native:true});try{assert.equal(session.node('data-actions').hidden,false);assert.equal(session.node('save-toolbar').hidden,false);assert.equal(session.window.document.querySelector('[data-view="users"]').hidden,false);}finally{session.dom.window.close();}
+});
+
+test('dashboard paginates analytics beyond one thousand rows and applies the selected date range',{skip:!enabled},async()=>{
+ const events=Array.from({length:1203},(_,index)=>({id:1203-index,kind:'visit',created_at:new Date().toISOString()}));
+ const {dom,window,node,analyticsReads}=await panelSession({native:true,events});try{
+  assert.equal(node('total-visits').textContent,'1.203');assert.equal(analyticsReads.length,3);
+  assert.deepEqual(analyticsReads.map(read=>[read.first,read.last]),[[0,499],[500,999],[1000,1499]]);
+  assert(analyticsReads.every(read=>read.start&&read.end));
+  node('analytics-period').value='30';node('analytics-period').dispatchEvent(new window.Event('change'));await new Promise(setImmediate);
+  assert.equal(analyticsReads.length,6);assert(analyticsReads[3].start<analyticsReads[0].start);
+ }finally{dom.window.close();}
+});
+test('analytics error is shown as unavailable, not as a zero-result recommendation',{skip:!enabled},async()=>{
+ const {dom,node}=await panelSession({native:true,analyticsError:true});try{
+  assert.equal(node('total-visits').textContent,'—');assert.match(node('assistant-answer').textContent,/Não consegui/);
+ }finally{dom.window.close();}
 });

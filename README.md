@@ -112,3 +112,21 @@ Até 760 px, o painel usa um cabeçalho com o botão **Menu**, que abre a navega
 Formulários usam uma coluna, campos com fonte de 16 px e controles maiores para toque. O layout considera as áreas de segurança do celular. A navegação desktop é preservada ao aumentar a largura.
 
 Os testes do menu usam um DOM em memória e não substituem uma conferência visual em aparelho real. Para executá-los, instale `jsdom` em um diretório temporário e use `JSDOM_MODULE=/caminho/node_modules/jsdom node --test tests/panel-mobile.test.cjs`.
+
+## Assistente e desempenho da MegaBio
+
+A visão geral reúne visitas, cliques, exibições de divulgações, movimento diário, ranking e o **Assistente MegaBio**. É uma análise automática por regras sobre os dados registrados, sem serviço externo de IA, sem chave adicional e sem alterar conteúdos. Os botões **O que divulgar?**, **O que é mais visto?** e **Como melhorar?** explicam os sinais do período, reconhecem empates e informam quando ainda faltam dados. As recomendações não afirmam vendas ou reservas.
+
+O filtro oferece 7, 30, 90 dias e todo o histórico. O dia começa à meia-noite de Recife; o gráfico mostra até 30 dias. Eventos no Supabase são lidos em páginas de 500, até 10 mil por consulta. Se esse limite for atingido, o painel identifica a limitação e não apresenta dias ausentes como zeros completos. O modo local usa os totais acumulados da API local e mantém o filtro desativado.
+
+As novas exibições individuais usam o evento existente `section`, com ID `view:promo_...`. Elas começam após a publicação desta atualização: registram um link pelo menos 50% visível por 1 segundo, com a página em primeiro plano, uma vez por divulgação por carregamento. Os IDs combinam seção e endereço de destino, preservando a identidade quando cartões mudam de posição. Links duplicados com o mesmo destino dentro da mesma seção contam como a mesma divulgação. Cliques podem se repetir e não representam pessoas únicas. Não há coleta adicional de localização ou identificação pessoal.
+
+Eventos antigos continuam nos relatórios e nos totais: cliques históricos não são atribuídos a novos cartões por posição. Visualizações antigas de seções ficam separadas das exibições individuais. Não é necessário executar novo SQL: os tipos de evento e as permissões existentes são preservados. O assistente, gráficos e métricas exigem **Relatórios**; atalhos de edição só aparecem para as seções permitidas.
+
+Testes de análise e medição:
+
+```sh
+node --test tests/megabio-analytics.test.cjs tests/promotion-observer.test.cjs
+```
+
+Os testes de integração de DOM usam `JSDOM_MODULE=/caminho/node_modules/jsdom node --test tests/megabio-dashboard.test.cjs tests/panel-mobile.test.cjs`. Eles cobrem navegação, permissões, exposição qualificada, cliques, paginação, filtros, respostas sem dados e falhas da consulta.
