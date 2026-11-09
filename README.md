@@ -61,6 +61,8 @@ Visitas, cliques e seções vistas são registrados sem IP ou identificador indi
 
 ## Listas, lixeira e histórico nativo
 
+Em **Perfil e aparência → Seções da MegaBio**, quem tem permissão **Perfil** pode ativar/desativar Hospedagens, Destinos, Destaques, Produtos e Redes e contato e personalizar seus títulos públicos. Clique em **Salvar alterações** para publicar. Desativar apenas oculta o bloco, preservando os itens para reativação; não move nada para a lixeira. Redes e contato são controlados juntos. As configurações ficam em `profile.sections`, usam as permissões existentes e não exigem novo SQL. Conteúdos antigos sem essa configuração mantêm todas as seções ativas com os títulos originais; um título vazio restaura o padrão. Os identificadores de analytics e os nomes do menu administrativo permanecem estáveis.
+
 Em instalações existentes, execute [`supabase/trash.sql`](supabase/trash.sql) no **SQL Editor** depois de `access.sql` e recarregue o painel. A migração preserva os conteúdos, atribui identificadores estáveis aos itens e cria as tabelas privadas `site_trash` e `site_activity`. Pode ser reaplicada. Ative essa estrutura antes de publicar a versão do painel com as novas listas.
 
 Hospedagens, destinos, produtos, destaques e redes aparecem como listas com busca, ordenação por nome ou posição e ações **Adicionar**, **Editar** e **Excluir**. O editor abre em uma janela; **Salvar item** publica somente aquela coleção, preservando alterações ainda não salvas no perfil ou contato. Cancelar descarta apenas o rascunho do item. Nas listas, o envio de imagem é publicado com **Salvar item**; no perfil, use **Salvar alterações**.

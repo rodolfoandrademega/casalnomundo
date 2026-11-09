@@ -177,3 +177,19 @@ test('saving one list item preserves unrelated profile drafts and sends only tha
   assert.equal(node('field-profile.name').value,'Rascunho do perfil');assert.equal(node('save-status').textContent,'Alterações não salvas');
  }finally{dom.window.close();}
 });
+
+test('profile section switches save booleans and custom headings without removing collection items',{skip:!enabled},async()=>{
+ const original=JSON.parse(fs.readFileSync(path.join(__dirname,'../conteudo.json'),'utf8')),patches=[];
+ const {dom,window,node}=await panelSession({permissions:['profile'],content:original,rpc(name,args){
+  if(name==='save_site_sections'){patches.push(args.patch);return {data:{payload:{...original,...args.patch},updated_at:'2026-11-09T12:00:00Z'}};}
+  return {data:null};
+ }});try{
+  const toggle=window.document.querySelector('[data-path="profile.sections.stays.enabled"]');assert(toggle.checked);
+  toggle.checked=false;toggle.dispatchEvent(new window.Event('input',{bubbles:true}));
+  const title=node('section-title-destinations');title.value='Nossos roteiros';title.dispatchEvent(new window.Event('input',{bubbles:true}));
+  assert(!window.document.querySelector('.preview-section-list').textContent.includes('Onde ficar'));assert(window.document.querySelector('.preview-section-list').textContent.includes('Nossos roteiros'));
+  node('save-button').click();await new Promise(setImmediate);
+  assert.equal(patches.length,1);assert.deepEqual(Object.keys(patches[0]),['profile']);assert.equal(patches[0].profile.sections.stays.enabled,false);assert.equal(patches[0].profile.sections.destinations.title,'Nossos roteiros');
+  assert.equal(window.document.querySelectorAll('[data-record-edit="stays"]').length,original.stays.length);assert.equal(window.document.querySelector('[data-path="profile.sections.stays.enabled"]').checked,false);
+ }finally{dom.window.close();}
+});

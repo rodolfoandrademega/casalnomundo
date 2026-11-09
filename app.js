@@ -27,6 +27,7 @@
 
   function render(d) {
     const profile=window.CNM_PROFILE.normalize(d.profile||{});
+    window.CNM_PROFILE.applySections(document,profile.sections);
     document.title=profile.siteTitle;window.CNM_PROFILE.applyColors(document.documentElement,profile.colors);
     document.querySelector('meta[name="theme-color"]').setAttribute('content',profile.colors.background);
     const hero = document.querySelector('#hero');
@@ -91,10 +92,10 @@
     const seen = new Set(), timers = new Map();
     const observer = new IntersectionObserver(entries => entries.forEach(entry => {
       const node = entry.target;
-      if (entry.isIntersecting && entry.intersectionRatio >= .5 && !seen.has(node) && !timers.has(node)) {
+      if (!node.hidden && entry.isIntersecting && entry.intersectionRatio >= .5 && !seen.has(node) && !timers.has(node)) {
         timers.set(node, setTimeout(() => {
           const r = node.getBoundingClientRect(), visible = Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0));
-          if (r.height && visible / r.height >= .5) {
+          if (!node.hidden && r.height && visible / r.height >= .5) {
             seen.add(node);
             const id = node.dataset.section.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             track({type:'section', id, label:node.dataset.section});

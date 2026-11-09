@@ -30,17 +30,18 @@
     @media(max-width:360px){.socials{grid-template-columns:1fr}.social{justify-content:flex-start;padding:0 14px}}
     .hero.has-video:after{display:none}.hero video{object-position:center}.hero-media-fallback{position:absolute;bottom:12px;left:12px;right:12px;padding:8px 12px;border-radius:6px;background:#202d29d9;color:#fff;font-size:11px;text-align:center}.social-icon{color:var(--orange)}
     .hero-placeholder{display:grid;place-items:center;height:100%;padding:20px;color:var(--muted);font-size:12px;text-align:center}
+    [data-bio-section][hidden]{display:none!important}.section-heading h2{overflow-wrap:anywhere;min-width:0}
   </style>
 </head>
 <body>
   <main class="page">
     <header class="hero" id="hero" aria-label="Casal no Mundo na praia"></header>
     <section class="identity" id="identity"></section>
-    <section class="section" data-section="Hospedagens" aria-labelledby="stay-title"><div class="section-heading"><h2 id="stay-title">Onde ficar</h2><span>♡ hospedagens indicadas</span></div><div class="stay-list" id="stays"></div></section>
-    <section class="section" data-section="Destinos" aria-labelledby="places-title"><div class="section-heading"><h2 id="places-title">Explore por perto</h2><span>João Pessoa, PB</span></div><div class="destination-grid" id="destination-grid"></div></section>
-    <section class="section" data-section="Destaques" aria-labelledby="highlight-title"><div class="section-heading"><h2 id="highlight-title">Destaques</h2></div><div class="highlight-list" id="highlights"></div></section>
-    <section class="section" data-section="Produtos" aria-labelledby="product-title"><div class="section-heading"><h2 id="product-title">Achados para viajar</h2></div><div class="product-list" id="products"></div></section>
-    <section class="section" data-section="Redes e contato" aria-label="Redes sociais e contato"><div class="section-heading"><h2>Continue a viagem</h2><span>@casalnomundo</span></div><div class="socials" id="socials"></div><div id="contact"></div></section>
+    <section class="section" data-section="Hospedagens" data-bio-section="stays" aria-labelledby="stay-title"><div class="section-heading"><h2 id="stay-title">Onde ficar</h2><span>♡ hospedagens indicadas</span></div><div class="stay-list" id="stays"></div></section>
+    <section class="section" data-section="Destinos" data-bio-section="destinations" aria-labelledby="places-title"><div class="section-heading"><h2 id="places-title">Explore por perto</h2><span>João Pessoa, PB</span></div><div class="destination-grid" id="destination-grid"></div></section>
+    <section class="section" data-section="Destaques" data-bio-section="highlights" aria-labelledby="highlight-title"><div class="section-heading"><h2 id="highlight-title">Destaques</h2></div><div class="highlight-list" id="highlights"></div></section>
+    <section class="section" data-section="Produtos" data-bio-section="products" aria-labelledby="product-title"><div class="section-heading"><h2 id="product-title">Achados para viajar</h2></div><div class="product-list" id="products"></div></section>
+    <section class="section" data-section="Redes e contato" data-bio-section="socials" aria-labelledby="social-title"><div class="section-heading"><h2 id="social-title">Continue a viagem</h2><span>@casalnomundo</span></div><div class="socials" id="socials"></div><div id="contact"></div></section>
     <footer>Desenvolvido por <a href="https://megaagencia.com.br" target="_blank" rel="noopener noreferrer">Mega Agencia</a></footer>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

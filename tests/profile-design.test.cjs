@@ -1,4 +1,9 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const profile=require('../profile-design');
+test('sections preserve the legacy layout, normalize titles and treat only boolean false as disabled',()=>{
+ const defaults=profile.sections();assert.equal(defaults.stays.title,'Onde ficar');assert(Object.values(defaults).every(item=>item.enabled));
+ const custom=profile.sections({stays:{enabled:false,title:'  Nossas pousadas  '},products:{enabled:'false',title:''},socials:{title:'X'.repeat(100)}});
+ assert.equal(custom.stays.enabled,false);assert.equal(custom.stays.title,'Nossas pousadas');assert.equal(custom.products.enabled,true);assert.equal(custom.products.title,'Achados para viajar');assert.equal(custom.socials.title.length,80);
+});
 test('default colors match the existing MegaBio and invalid colors cannot inject styles',()=>{
  const palette=profile.palette();assert.equal(palette['--orange'],'#f36b35');assert.equal(palette['--black'],'#171717');assert.equal(palette['--white'],'#ffffff');assert.equal(palette['--muted'],'#686868');assert.equal(palette['--soft'],'#f6f6f4');
  assert.equal(profile.colors({accent:'url(javascript:alert(1))'}).accent,'#f36b35');assert.equal(profile.colors({accent:'#AABBCC'}).accent,'#aabbcc');

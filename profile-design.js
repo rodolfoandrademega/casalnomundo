@@ -1,5 +1,6 @@
 (() => {
   const DEFAULT_TITLE='Casal no Mundo';
+  const SECTION_DEFAULTS={stays:{label:'Hospedagens',title:'Onde ficar'},destinations:{label:'Destinos',title:'Explore por perto'},highlights:{label:'Destaques',title:'Destaques'},products:{label:'Produtos',title:'Achados para viajar'},socials:{label:'Redes e contato',title:'Continue a viagem'}};
   const DEFAULT_COLORS=Object.freeze({background:'#ffffff',text:'#171717',accent:'#f36b35',surface:'#ffffff'});
   const PRESETS={original:{label:'Original',colors:DEFAULT_COLORS},forest:{label:'Floresta',colors:{background:'#f1f5ee',text:'#20382b',accent:'#3d7152',surface:'#ffffff'}},sunset:{label:'Pôr do sol',colors:{background:'#fff4ef',text:'#472f2c',accent:'#ba5940',surface:'#fffaf7'}},night:{label:'Noite',colors:{background:'#172822',text:'#edf4e9',accent:'#f4a77a',surface:'#223a2e'}}};
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -15,7 +16,10 @@
     const cardText=contrast(c.text,c.surface)>=4.5?c.text:readable(c.surface);
     return {'--white':c.background,'--black':c.text,'--orange':c.accent,'--surface':c.surface,'--muted':original?'#686868':blend(c.text,c.background,.65),'--line':original?'#e6e6e6':blend(c.text,c.background,.12),'--soft':original?'#f6f6f4':blend(c.text,c.background,.04),'--card-ink':cardText,'--card-muted':original?'#686868':blend(cardText,c.surface,.7),'--accent-ink':original?'#ffffff':readable(c.accent),'--button-ink':original?'#ffffff':readable(c.text)};
   }
-  function normalize(profile={}){return {...profile,siteTitle:typeof profile.siteTitle==='string'&&profile.siteTitle.trim()?profile.siteTitle.trim().slice(0,120):DEFAULT_TITLE,heroType:profile.heroType==='video'?'video':'image',video:typeof profile.video==='string'?profile.video:'',colors:colors(profile.colors)};}
+  function sections(value){return Object.fromEntries(Object.entries(SECTION_DEFAULTS).map(([key,item])=>[key,{enabled:value?.[key]?.enabled!==false,title:typeof value?.[key]?.title==='string'&&value[key].title.trim()?value[key].title.trim().slice(0,80):item.title}]));}
+  function sectionFields(profile){const settings=sections(profile.sections);return `<div class="section-settings">${Object.entries(SECTION_DEFAULTS).map(([key,item])=>`<div class="section-setting"><div class="section-setting-top"><strong>${esc(item.label)}</strong><label class="section-switch"><input type="checkbox" role="switch" data-path="profile.sections.${key}.enabled" ${settings[key].enabled?'checked':''} aria-label="Exibir ${esc(item.label)} na MegaBio"><span>Exibir seção</span></label></div><label for="section-title-${key}">Título na MegaBio</label><input id="section-title-${key}" data-path="profile.sections.${key}.title" maxlength="80" value="${esc(settings[key].title)}" placeholder="${esc(item.title)}"></div>`).join('')}</div><p class="hint">Desativar oculta a seção da página, preservando todos os itens cadastrados. Salve as alterações para publicar. Deixe o título vazio para usar o padrão.</p>`;}
+  function applySections(root,value){const settings=sections(value);Object.entries(settings).forEach(([key,item])=>{const node=root.querySelector(`[data-bio-section="${key}"]`);if(!node)return;node.hidden=!item.enabled;const heading=node.querySelector('h2');if(heading)heading.textContent=item.title;});}
+  function normalize(profile={}){return {...profile,sections:sections(profile.sections),siteTitle:typeof profile.siteTitle==='string'&&profile.siteTitle.trim()?profile.siteTitle.trim().slice(0,120):DEFAULT_TITLE,heroType:profile.heroType==='video'?'video':'image',video:typeof profile.video==='string'?profile.video:'',colors:colors(profile.colors)};}
   function mediaUrl(value){const url=String(value||'').trim();return /^(https?:\/\/|\.\.?\/|\/(?!\/))/i.test(url)||/^[\w-]+\.(jpe?g|png|gif|webp|mp4|webm)$/i.test(url)?url:'';}
   function applyColors(element,value){Object.entries(palette(value)).forEach(([key,color])=>element.style.setProperty(key,color));}
   function renderHero(element,profile,{preview=false}={}){
@@ -31,11 +35,13 @@
   function previewMarkup(){return '<div class="profile-preview-heading"><span class="profile-step">Prévia ao vivo</span><span>Suas alterações, antes de publicar</span></div><div class="preview-browser"><div class="preview-browser-bar"><i></i><i></i><i></i><span id="preview-tab-title"></span></div><div class="preview-bio" id="profile-preview"><div class="preview-hero"></div><div class="preview-identity"><span id="preview-eyebrow"></span><h3 id="preview-name"></h3><p id="preview-subtitle"></p></div><div class="preview-promotion"><span class="preview-mini-label">Sua próxima experiência</span><strong>Uma MegaBio com a sua identidade.</strong><p>Cores que acompanham seus conteúdos.</p></div><span class="preview-cta">Conheça nossas indicações <span aria-hidden="true">↗</span></span></div></div><p class="hint">Prévia ilustrativa. Clique em Salvar alterações para aplicar à MegaBio.</p>';}
   function paintPreview(container,profile){
     const p=normalize(profile),bio=container.querySelector('#profile-preview');if(!bio)return;
+    let sectionPreview=bio.querySelector('.preview-section-list');if(!sectionPreview){sectionPreview=bio.ownerDocument.createElement('div');sectionPreview.className='preview-section-list';bio.append(sectionPreview);}
+    sectionPreview.innerHTML=Object.values(p.sections).filter(item=>item.enabled).map(item=>`<span>${esc(item.title)}</span>`).join('')||'<small>Seções ocultas na MegaBio</small>';
     applyColors(bio,p.colors);container.querySelector('#preview-tab-title').textContent=p.siteTitle;
     container.querySelector('#preview-name').textContent=p.name||'Nome do perfil';container.querySelector('#preview-eyebrow').textContent=p.eyebrow||'';container.querySelector('#preview-subtitle').textContent=p.subtitle||'';
     const hero=container.querySelector('.preview-hero'),key=JSON.stringify([p.heroType,p.image,p.video]);
     if(hero.dataset.mediaKey!==key){hero.dataset.mediaKey=key;renderHero(hero,p,{preview:true});}
   }
-  const api={DEFAULT_TITLE,DEFAULT_COLORS,PRESETS,validColor,colors,palette,normalize,mediaUrl,contrast,applyColors,renderHero,colorFields,previewMarkup,paintPreview};
+  const api={DEFAULT_TITLE,DEFAULT_COLORS,PRESETS,SECTION_DEFAULTS,sections,sectionFields,applySections,validColor,colors,palette,normalize,mediaUrl,contrast,applyColors,renderHero,colorFields,previewMarkup,paintPreview};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else window.CNM_PROFILE=api;
 })();

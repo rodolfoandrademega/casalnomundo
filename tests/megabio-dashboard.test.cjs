@@ -27,5 +27,11 @@ test('public page renders stable measured links and preserves existing visits an
   first.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));await new Promise(setImmediate);assert(sent.some(event=>event.kind==='click'&&event.link_id===before));
   const content=JSON.parse(JSON.stringify(window.CNM_DEFAULT_DATA));content.stays.reverse();window.CasalPage.render(content);
   assert(window.document.querySelector(`[data-promotion="${before}"]`));
+  const count=content.stays.length;content.profile.sections={stays:{enabled:false,title:'Pousadas favoritas'},destinations:{title:'<img src=x onerror=alert(1)>'},socials:{enabled:false}};
+  window.CasalPage.render(content);
+  assert.equal(window.document.querySelector('[data-bio-section="stays"]').hidden,true);assert.equal(content.stays.length,count);
+  assert.equal(window.document.querySelector('#stay-title').textContent,'Pousadas favoritas');assert.equal(window.document.querySelector('#places-title').textContent,'<img src=x onerror=alert(1)>');assert.equal(window.document.querySelector('#places-title img'),null);
+  assert.equal(window.document.querySelector('#socials').closest('section').hidden,true);assert.equal(window.document.querySelector('#contact').closest('section').hidden,true);
+  content.profile.sections.stays.enabled=true;window.CasalPage.render(content);assert.equal(window.document.querySelector('[data-bio-section="stays"]').hidden,false);assert(window.document.querySelector(`[data-promotion="${before}"]`));
  }finally{dom.window.close();}
 });
