@@ -194,17 +194,9 @@ test('profile section switches save booleans and custom headings without removin
  }finally{dom.window.close();}
 });
 
-test('button customization previews and saves independently from the page palette and can be reset',{skip:!enabled},async()=>{
- const original=JSON.parse(fs.readFileSync(path.join(__dirname,'../conteudo.json'),'utf8')),patches=[];
- const {dom,window,node}=await panelSession({permissions:['profile'],content:original,rpc(name,args){
-  if(name==='save_site_sections'){patches.push(args.patch);return {data:{payload:{...original,...args.patch},updated_at:'2026-11-09T14:00:00Z'}};}
-  return {data:null};
- }});try{
-  const input=(key,value)=>{const element=window.document.querySelector('[data-path="profile.buttons.'+key+'"]');if(element.type==='checkbox')element.checked=value;else element.value=value;element.dispatchEvent(new window.Event('input',{bubbles:true}));};
-  input('customColors',true);input('background','#123456');input('animation','shine');input('radius','pill');input('target','contact');
-  assert.equal(window.document.querySelector('.preview-cta').dataset.bioButtonEffect,'shine');assert.equal(node('color-background').value,'#ffffff');
-  window.document.querySelector('[data-color-preset="night"]').click();assert.equal(node('button-color-background').value,'#123456');
-  node('save-button').click();await new Promise(setImmediate);assert.equal(patches[0].profile.buttons.animation,'shine');assert.equal(patches[0].profile.buttons.customColors,true);assert.equal(patches[0].profile.buttons.background,'#123456');
-  window.document.querySelector('[data-reset-buttons]').click();assert.equal(window.document.querySelector('.preview-cta').dataset.bioButtonEffect,'none');assert.equal(window.document.querySelector('.preview-cta').dataset.bioButtonColors,'false');assert.equal(node('color-background').value,'#172822');
+test('global button controls are removed while profile and highlight editors remain available',{skip:!enabled},async()=>{
+ const {dom,window,node}=await panelSession({native:true});try{
+  assert.equal(window.document.querySelector('[data-path^="profile.buttons."]'),null);assert.equal(window.document.querySelector('[data-reset-buttons]'),null);assert(!node('view-profile').textContent.includes('Botões e animações'));
+  window.document.querySelector('[data-record-add="highlights"]').click();assert(node('highlight-card-preview'));assert(window.document.querySelector('[data-record-card="background"]'));
  }finally{dom.window.close();}
 });

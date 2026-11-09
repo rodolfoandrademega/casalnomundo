@@ -50,10 +50,10 @@ test('highlight appearance edits the whole card in an isolated draft without add
   data.highlights=[{_id:'h1',title:'Oferta A',url:'https://example.com/a',image:'https://example.com/photo.jpg'},{_id:'h2',title:'Oferta B',url:'https://example.com/b',card:{customColors:true,background:'#112233',animation:'pulse'}}];controller.render('highlights');
   window.document.querySelector('[data-record-edit="highlights"]').click();
   const edit=(key,value)=>{const input=window.document.querySelector('[data-record-card="'+key+'"]');if(input.type==='checkbox')input.checked=value;else input.value=value;input.dispatchEvent(new window.Event('input',{bubbles:true}));};
-  edit('customColors',true);edit('background','#336699');edit('text','#ffffff');edit('animation','shine');
-  const card=node('highlight-card-preview');assert.equal(card.dataset.bioButtonEffect,'shine');assert.equal(card.style.getPropertyValue('--bio-btn-bg'),'#336699');assert(card.querySelector('img'));assert.equal(card.querySelector('button'),null);assert.equal(card.querySelector('.highlight-cta'),null);assert.equal(data.highlights[0].card,undefined);
+  edit('background','#336699');assert.equal(window.document.querySelector('[data-record-card="customColors"]').checked,true);edit('text','#ffffff');edit('animation','shine');
+  const card=node('highlight-card-preview');assert.equal(card.dataset.cardEffect,'shine');assert.equal(card.style.getPropertyValue('--highlight-card-bg'),'#336699');assert(card.querySelector('img'));assert.equal(card.querySelector('button'),null);assert.equal(card.querySelector('.highlight-cta'),null);assert.equal(data.highlights[0].card,undefined);
   node('record-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(setImmediate);
   assert.equal(commits.length,1);assert.equal(data.highlights[0].card.background,'#336699');assert.equal(data.highlights[0].card.animation,'shine');assert.equal(data.highlights[1].card.background,'#112233');assert.equal(data.highlights[1].card.animation,'pulse');
-  window.document.querySelector('[data-record-edit="highlights"]').click();window.document.querySelector('[data-reset-card]').click();assert.equal(node('highlight-card-preview').dataset.bioButtonEffect,'none');assert.equal(data.highlights[0].card.animation,'shine');
+  window.document.querySelector('[data-record-edit="highlights"]').click();window.document.querySelector('[data-reset-card]').click();assert.equal(node('highlight-card-preview').dataset.cardEffect,'none');assert.equal(data.highlights[0].card.animation,'shine');
  }finally{dom.window.close();}
 });

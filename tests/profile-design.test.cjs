@@ -5,12 +5,13 @@ test('button settings are safe and remain opt-in for existing profiles',()=>{
  assert.equal(b.background,'#f36b35');assert.equal(b.text,'#aabbcc');assert.equal(b.animation,'none');assert.equal(b.speed,'normal');assert.equal(b.radius,'standard');assert.equal(b.target,'all');
  const css=require('node:fs').readFileSync(require('node:path').join(__dirname,'../button-design.css'),'utf8');assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);assert.match(css,/pointer-events:none/);
 });
-test('button styling applies only to its target and clears previous effects when reset',{skip:!process.env.JSDOM_MODULE},()=>{
- const {JSDOM}=require(process.env.JSDOM_MODULE),dom=new JSDOM('<a class="contact">Contato</a><a class="social">Rede</a><div class="buy-links"><a>Loja</a></div><button>Admin</button>');try{
-  const doc=dom.window.document;profile.applyButtons(doc,{customColors:true,background:'#123456',animation:'shine',radius:'pill'});
-  assert.equal(doc.querySelectorAll('[data-bio-button-effect="shine"]').length,3);assert.equal(doc.querySelector('button').hasAttribute('data-bio-button'),false);assert.equal(doc.documentElement.style.getPropertyValue('--bio-btn-bg'),'#123456');
-  profile.applyButtons(doc,{animation:'pulse',target:'contact'});assert.equal(doc.querySelectorAll('[data-bio-button]').length,1);assert.equal(doc.querySelector('.contact').dataset.bioButtonEffect,'pulse');
-  profile.applyButtons(doc,{});assert.equal(doc.querySelectorAll('[data-bio-button-effect="shine"],[data-bio-button-effect="pulse"]').length,0);assert.equal(doc.querySelector('.contact').dataset.bioButtonColors,'false');
+test('card styling and CSS cannot animate or recolor ordinary buttons, even with legacy attributes',{skip:!process.env.JSDOM_MODULE},()=>{
+ const {JSDOM}=require(process.env.JSDOM_MODULE),css=require('node:fs').readFileSync(require('node:path').join(__dirname,'../button-design.css'),'utf8'),dom=new JSDOM('<style>.contact{background:#f36b35;color:white}'+css+'</style><a class="contact" data-bio-button-effect="shine" data-bio-button-colors="true">Contato</a><a class="social">Rede</a><div class="buy-links"><a>Loja</a></div><button>Admin</button><a class="highlight"><span class="highlight-copy"><strong>Oferta</strong></span></a>');try{
+  const doc=dom.window.document,contact=doc.querySelector('.contact'),before=dom.window.getComputedStyle(contact).backgroundColor;
+  profile.applyHighlightCard(doc.querySelector('.highlight'),{customColors:true,background:'#123456',animation:'shine'});
+  assert.equal(doc.querySelectorAll('[data-card-effect="shine"]').length,1);assert.equal(doc.querySelector('.highlight').style.getPropertyValue('--highlight-card-bg'),'#123456');assert.equal(dom.window.getComputedStyle(contact).backgroundColor,before);assert.equal(dom.window.getComputedStyle(contact).animation,'none');
+  for(const node of doc.querySelectorAll('.contact,.social,.buy-links a,button'))assert.equal(node.hasAttribute('data-highlight-card'),false);
+  const rules=[...doc.styleSheets[0].cssRules].filter(rule=>rule.selectorText&&rule.style.animation);assert(rules.length);assert(rules.every(rule=>rule.selectorText.includes('[data-highlight-card]')));
  }finally{dom.window.close();}
 });
 test('sections preserve the legacy layout, normalize titles and treat only boolean false as disabled',()=>{

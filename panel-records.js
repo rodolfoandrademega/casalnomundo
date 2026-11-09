@@ -49,7 +49,7 @@
       if(target.dataset.recordSearch){const root=target.dataset.recordSearch,selection=target.selectionStart;state[root].query=target.value;render(root);const replacement=main.querySelector(`[data-record-search="${root}"]`);replacement.focus();try{replacement.setSelectionRange(selection,selection);}catch(_){}return;}
       if(!editor||!dialog.contains(target))return;
       if(target.dataset.recordField){editor.draft[target.dataset.recordField]=target.value;changed=true;paintCard();}
-      if(target.dataset.recordCard&&editor.root==='highlights'){editor.draft.card[target.dataset.recordCard]=target.type==='checkbox'?target.checked:target.value;changed=true;paintCard();}
+      if(target.dataset.recordCard&&editor.root==='highlights'){editor.draft.card[target.dataset.recordCard]=target.type==='checkbox'?target.checked:target.value;if(['background','text','border'].includes(target.dataset.recordCard)){editor.draft.card.customColors=true;dialog.querySelector('[data-record-card="customColors"]').checked=true;}changed=true;paintCard();}
       if(target.dataset.shopId){const shop=editor.draft.links.find(item=>item._id===target.dataset.shopId);if(shop){shop[target.dataset.shopKey]=target.value;changed=true;}}
       if(target.matches('[data-image-url]')){editor.draft.image=target.value;changed=true;paintCard();previewMedia(target.closest('[data-image-editor]'),target.value);}
     });
