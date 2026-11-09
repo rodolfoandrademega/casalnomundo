@@ -47,3 +47,20 @@ test('a failed backend uses the bundled content before stale local drafts and fi
   assert.equal(f.doc.querySelector('h1').textContent,'Conteúdo publicado');assert.equal(f.doc.querySelector('#page-load-status').hidden,true);assert(f.doc.body.classList.contains('content-ready'));
  }finally{f.dom.window.close();}
 });
+
+test('professional navigation includes only visible content sections and keeps their custom titles',{skip:!enabled},async()=>{
+ const f=await fixture();try{
+  f.render({profile:{sections:{highlights:{title:'Ofertas <especiais>'},destinations:{enabled:false}}},stays:[{title:'Hospedagem',url:'https://example.com/stay'}],destinations:[{title:'Oculto',url:'https://example.com/place'}],highlights:[{title:'Oferta',url:'https://example.com/offer'}]});
+  const nav=f.doc.querySelector('#bio-navigation');assert.equal(nav.hidden,false);assert.equal(nav.querySelectorAll('a').length,2);assert.equal(nav.querySelector('a[href="#bio-destinations"]'),null);assert.equal(nav.querySelector('a[href="#bio-highlights"]').textContent,'Ofertas <especiais>');assert.equal(nav.querySelector('especiais'),null);
+  for(const link of nav.querySelectorAll('a')){assert(f.doc.querySelector(link.getAttribute('href')));assert.equal(link.hasAttribute('data-track'),false);}
+  f.render({highlights:[{title:'Único',url:'https://example.com/one'}]});assert(nav.hidden);
+ }finally{f.dom.window.close();}
+});
+
+test('the professional stylesheet preserves custom highlight colors and keeps contact styling independent',{skip:!enabled},async()=>{
+ const f=await fixture();try{
+  for(const file of ['button-design.css','megabio.css']){const style=f.doc.createElement('style');style.textContent=fs.readFileSync(path.join(__dirname,'..',file),'utf8');f.doc.head.append(style);}
+  f.render({profile:{colors:f.window.CNM_PROFILE.PRESETS.night.colors},highlights:[{title:'Oferta',url:'https://example.com/offer',card:{customColors:true,background:'#123456',text:'#ffffff',animation:'shine'}}],contact:{url:'https://example.com/contact'},socials:[{label:'Rede',url:'https://example.com/social'}]});
+  assert.equal(f.window.getComputedStyle(f.doc.querySelector('.highlight')).backgroundColor,'rgb(18, 52, 86)');assert.equal(f.window.getComputedStyle(f.doc.querySelector('.highlight strong')).color,'rgb(255, 255, 255)');assert.equal(f.window.getComputedStyle(f.doc.querySelector('.contact')).backgroundColor,'rgb(244, 167, 122)');assert.equal(f.doc.querySelector('.contact').hasAttribute('data-card-effect'),false);assert.equal(f.doc.querySelector('.social').hasAttribute('data-card-effect'),false);
+ }finally{f.dom.window.close();}
+});

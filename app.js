@@ -56,6 +56,7 @@
     const contact = d.contact || {};
     document.querySelector('#contact').innerHTML = safeUrl(contact.url)?anchor(contact.url, `${esc(text(contact.label) || 'Contato')} ↗`, 'contact', 'contact', text(contact.label)):'';
     for(const [key,id] of Object.entries({stays:'stays',destinations:'destination-grid',highlights:'highlights',products:'products',socials:'socials'})){const section=document.querySelector(`[data-bio-section="${key}"]`);section.hidden=!profile.sections[key].enabled||!(document.getElementById(id).children.length||(key==='socials'&&document.getElementById('contact').children.length));}
+    const navigation=document.getElementById('bio-navigation');if(navigation){const visible=[...document.querySelectorAll('[data-bio-section]')].filter(section=>!section.hidden);visible.forEach(section=>section.id='bio-'+section.dataset.bioSection);navigation.hidden=visible.length<2;navigation.innerHTML=visible.map(section=>{const title=profile.sections[section.dataset.bioSection].title;return `<a href="#${section.id}" title="${esc(title)}">${esc(title)}</a>`;}).join('');}
     document.body.classList.add('content-ready');
     const loading=document.getElementById('page-load-status');if(loading)loading.hidden=true;
     stopPromotionObserver();stopPromotionObserver=window.CNM_PROMOTION_VIEWS.watch(document,track,seenPromotions);
