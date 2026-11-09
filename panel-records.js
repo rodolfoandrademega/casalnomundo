@@ -31,6 +31,7 @@
     function close(){hide(dialog);focusList();editor=null;changed=false;}
     function requestClose(){if(isBusy()||saving)return;if(changed){dialog.querySelector('.discard-confirm').hidden=false;}else close();}
     function shopFields(){if(!editor||editor.root!=='products')return;const list=dialog.querySelector('#record-shops');list.innerHTML=(editor.draft.links||[]).map(shop=>`<div class="shop-record"><details ${shop._editing?'open':''}><summary><span>${esc(shop.label||'Nova loja')}</span><span>Editar</span></summary><div class="fields"><div class="field"><label>Nome da loja<input data-shop-id="${esc(shop._id)}" data-shop-key="label" value="${esc(shop.label||'')}" required></label></div><div class="field"><label>Link da loja<input data-shop-id="${esc(shop._id)}" data-shop-key="url" value="${esc(shop.url||'')}" inputmode="url" required></label></div></div></details><button class="button record-trash" type="button" data-record-remove-shop="${esc(shop._id)}">Excluir loja</button></div>`).join('')||'<p class="hint">Nenhuma loja adicionada.</p>';}
+    function paintCard(){if(editor?.root!=='highlights')return;const node=dialog.querySelector('#highlight-card-preview');if(!node)return;const item=editor.draft,url=window.CNM_PROFILE.mediaUrl(item.image);node.innerHTML=`${url?`<img src="${esc(url)}" alt="">`:'<div class="highlight-preview-placeholder">Imagem</div>'}<span class="highlight-copy"><span class="label">${esc(item.label||'Destaque')}</span><strong>${esc(item.title||'Título do destaque')}</strong><span class="highlight-preview-description">${esc(item.description||'A descrição do destaque aparece aqui.')}</span></span><span class="highlight-arrow" aria-hidden="true">↗</span>`;window.CNM_PROFILE.applyHighlightCard(node,item.card);const c=window.CNM_PROFILE.highlightCard(item.card);dialog.querySelector('#card-contrast-note').textContent=c.customColors&&window.CNM_PROFILE.contrast(c.background,c.text)<4.5?'Ajuste o texto ou o fundo para melhorar o contraste.':'';}
     function open(root,ref){
       const schema=schemas[root];if(!schema||!can(schema.view)||isBusy())return;
       const source=ref?record(root,ref):null;if(ref&&!source)return;
@@ -39,7 +40,7 @@
       dialog.querySelector('#record-dialog-title').textContent=(source?'Editar ':'Adicionar ')+schema.one;
       dialog.querySelector('.record-editor-message').textContent='';dialog.querySelector('.discard-confirm').hidden=true;
       dialog.querySelector('#record-dialog-body').innerHTML=`<div class="fields">${schema.fields.map(([key,label,required,type])=>`<div class="field${type==='textarea'?' full':''}"><label for="record-${key}">${label}</label>${type==='textarea'?`<textarea id="record-${key}" data-record-field="${key}">${esc(editor.draft[key]||'')}</textarea>`:`<input id="record-${key}" data-record-field="${key}" value="${esc(Array.isArray(editor.draft[key])?editor.draft[key].join(', '):editor.draft[key]||'')}" ${required?'required':''} ${key==='url'?'inputmode="url"':''}>`}</div>`).join('')}</div>${root!=='socials'?mediaField('draft.image',editor.draft.image):''}${root==='products'?'<div class="shop-list-heading"><div><h3>Lojas e links</h3><p>Edite as lojas deste produto.</p></div><button class="button" type="button" data-record-add-shop>+ Adicionar loja</button></div><div id="record-shops"></div><p class="hint">Lojas excluídas vão para a lixeira quando você salvar o produto.</p>':''}`;
-      shopFields();show(dialog);
+      if(root==='highlights'){editor.draft.card=window.CNM_PROFILE.highlightCard(editor.draft.card);dialog.querySelector('#record-dialog-body').insertAdjacentHTML('beforeend',`<div class="highlight-card-editor">${window.CNM_PROFILE.highlightCardFields(editor.draft.card)}</div>`);paintCard();}shopFields();show(dialog);
     }
     dialog.addEventListener('cancel',event=>{event.preventDefault();requestClose();});
     deleteDialog.addEventListener('cancel',event=>{if(saving){event.preventDefault();}});
@@ -47,9 +48,10 @@
       const target=event.target;
       if(target.dataset.recordSearch){const root=target.dataset.recordSearch,selection=target.selectionStart;state[root].query=target.value;render(root);const replacement=main.querySelector(`[data-record-search="${root}"]`);replacement.focus();try{replacement.setSelectionRange(selection,selection);}catch(_){}return;}
       if(!editor||!dialog.contains(target))return;
-      if(target.dataset.recordField){editor.draft[target.dataset.recordField]=target.value;changed=true;}
+      if(target.dataset.recordField){editor.draft[target.dataset.recordField]=target.value;changed=true;paintCard();}
+      if(target.dataset.recordCard&&editor.root==='highlights'){editor.draft.card[target.dataset.recordCard]=target.type==='checkbox'?target.checked:target.value;changed=true;paintCard();}
       if(target.dataset.shopId){const shop=editor.draft.links.find(item=>item._id===target.dataset.shopId);if(shop){shop[target.dataset.shopKey]=target.value;changed=true;}}
-      if(target.matches('[data-image-url]')){editor.draft.image=target.value;changed=true;previewMedia(target.closest('[data-image-editor]'),target.value);}
+      if(target.matches('[data-image-url]')){editor.draft.image=target.value;changed=true;paintCard();previewMedia(target.closest('[data-image-editor]'),target.value);}
     });
     main.addEventListener('change',event=>{if(event.target.dataset.recordSort){const root=event.target.dataset.recordSort;state[root].sort=event.target.value;render(root);}});
     main.addEventListener('click',async event=>{
@@ -57,6 +59,7 @@
       if(target.closest('[data-close-record]')){requestClose();return;}
       if(target.closest('[data-continue-record]')){dialog.querySelector('.discard-confirm').hidden=true;return;}
       if(target.closest('[data-discard-record]')){close();return;}
+      if(target.closest('[data-reset-card]')&&editor?.root==='highlights'){editor.draft.card=window.CNM_PROFILE.highlightCard();dialog.querySelectorAll('[data-record-card]').forEach(input=>{const value=editor.draft.card[input.dataset.recordCard];if(input.type==='checkbox')input.checked=value;else input.value=value;});changed=true;paintCard();return;}
       const add=target.closest('[data-record-add]');if(add){open(add.dataset.recordAdd);return;}
       const edit=target.closest('[data-record-edit]');if(edit){open(edit.dataset.recordEdit,edit.dataset.recordRef);return;}
       const clear=target.closest('[data-clear-search]');if(clear){state[clear.dataset.clearSearch].query='';render(clear.dataset.clearSearch);return;}
@@ -75,12 +78,13 @@
       if(item.url&&!safeUrl(item.url)){message.textContent='Informe um link com https:// ou um caminho válido.';return;}
       if(schema.fields.some(([key,,required])=>required&&!String(item[key]||'').trim())){message.textContent='Preencha os campos obrigatórios.';return;}
       if(editor.root==='products'&&(item.links||[]).some(shop=>!shop.label.trim()||!safeUrl(shop.url))){message.textContent='Informe nome e link válido de cada loja.';return;}
+      if(editor.root==='highlights')item.card=window.CNM_PROFILE.highlightCard(item.card);
       if(typeof item.facts==='string')item.facts=item.facts.split(',').map(value=>value.trim()).filter(Boolean);
       if(item.links)item.links=item.links.map(({_editing,...shop})=>shop);
       saving=true;const buttons=[...dialog.querySelectorAll('button')];buttons.forEach(button=>button.disabled=true);message.textContent='Salvando item…';
       try{await onCommit(editor.root,editor.ref,item);const root=editor.root;if(!editor.ref)state[root].query='';changed=false;close();render(root);notify('Item salvo na MegaBio.');}catch(error){message.textContent=error.message||'Não foi possível salvar.';}finally{saving=false;buttons.forEach(button=>button.disabled=false);}
     });
-    return {renderAll(){Object.keys(schemas).forEach(render);},render,mediaContext(input){if(!editor||!dialog.contains(input))return null;return {section:schemas[editor.root].view,set(value){editor.draft.image=value;changed=true;}};},closeOnLogout(){hide(dialog);hide(deleteDialog);editor=null;deleteTarget=null;changed=false;},schemas};
+    return {renderAll(){Object.keys(schemas).forEach(render);},render,mediaContext(input){if(!editor||!dialog.contains(input))return null;return {section:schemas[editor.root].view,set(value){editor.draft.image=value;changed=true;paintCard();}};},closeOnLogout(){hide(dialog);hide(deleteDialog);editor=null;deleteTarget=null;changed=false;},schemas};
   }
   window.CNM_RECORDS={create};
 })();

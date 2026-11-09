@@ -2,6 +2,7 @@ const {test}=require('node:test');const assert=require('node:assert/strict');con
 function fixture({allowed=true,failDelete=false}={}){
  const {JSDOM}=require(process.env.JSDOM_MODULE),dom=new JSDOM(fs.readFileSync(path.join(__dirname,'../painel.html'),'utf8'),{runScripts:'outside-only',url:'https://example.com/admin'}),{window}=dom;
  window.structuredClone=structuredClone;window.document.body.classList.remove('auth-pending');window.document.getElementById('view-stay').classList.add('active');
+ window.eval(fs.readFileSync(path.join(__dirname,'../profile-design.js'),'utf8'));
  window.eval(fs.readFileSync(path.join(__dirname,'../panel-records.js'),'utf8'));
  const data={stays:[{_id:'stay-one',title:'Hospedagem A',description:'Descrição',url:'https://example.com/a',image:''}],products:[{_id:'product-one',title:'Produto A',links:[{_id:'shop-one',label:'Loja A',url:'https://example.com/shop'}]}],destinations:[],highlights:[],socials:[]},trash=[],commits=[];
  const controller=window.CNM_RECORDS.create({main:window.document.querySelector('.main'),getData:()=>data,can:()=>allowed,isBusy:()=>false,notify(){},mediaField:()=>'',previewMedia(){},async onCommit(root,ref,item){commits.push({root,ref,item});if(ref)data[root]=data[root].map(row=>row._id===ref?item:row);else data[root].push(item);},async onDelete(root,item){if(failDelete)throw new Error('Falha segura');trash.push(structuredClone(item));data[root]=data[root].filter(row=>row._id!==item._id);}});
@@ -41,5 +42,18 @@ test('shop deletion remains a draft until the parent product is saved',{skip:!en
  const {dom,window,data,node}=fixture();try{
   window.document.querySelector('[data-record-edit="products"]').click();node('record-dialog').querySelector('[data-record-remove-shop]').click();assert.equal(data.products[0].links.length,1);
   node('record-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(setImmediate);assert.equal(data.products[0].links.length,0);
+ }finally{dom.window.close();}
+});
+
+test('highlight appearance edits the whole card in an isolated draft without adding an inner button',{skip:!enabled},async()=>{
+ const {dom,window,data,node,controller,commits}=fixture();try{
+  data.highlights=[{_id:'h1',title:'Oferta A',url:'https://example.com/a',image:'https://example.com/photo.jpg'},{_id:'h2',title:'Oferta B',url:'https://example.com/b',card:{customColors:true,background:'#112233',animation:'pulse'}}];controller.render('highlights');
+  window.document.querySelector('[data-record-edit="highlights"]').click();
+  const edit=(key,value)=>{const input=window.document.querySelector('[data-record-card="'+key+'"]');if(input.type==='checkbox')input.checked=value;else input.value=value;input.dispatchEvent(new window.Event('input',{bubbles:true}));};
+  edit('customColors',true);edit('background','#336699');edit('text','#ffffff');edit('animation','shine');
+  const card=node('highlight-card-preview');assert.equal(card.dataset.bioButtonEffect,'shine');assert.equal(card.style.getPropertyValue('--bio-btn-bg'),'#336699');assert(card.querySelector('img'));assert.equal(card.querySelector('button'),null);assert.equal(card.querySelector('.highlight-cta'),null);assert.equal(data.highlights[0].card,undefined);
+  node('record-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(setImmediate);
+  assert.equal(commits.length,1);assert.equal(data.highlights[0].card.background,'#336699');assert.equal(data.highlights[0].card.animation,'shine');assert.equal(data.highlights[1].card.background,'#112233');assert.equal(data.highlights[1].card.animation,'pulse');
+  window.document.querySelector('[data-record-edit="highlights"]').click();window.document.querySelector('[data-reset-card]').click();assert.equal(node('highlight-card-preview').dataset.bioButtonEffect,'none');assert.equal(data.highlights[0].card.animation,'shine');
  }finally{dom.window.close();}
 });
