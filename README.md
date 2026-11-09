@@ -77,6 +77,8 @@ Verificação de interface: `JSDOM_MODULE=/caminho/node_modules/jsdom node --tes
 
 ## Envio de imagens
 
+Novos arquivos JPG, PNG e WebP são ajustados no navegador antes do envio, com orientação da foto respeitada e sem distorção. A capa usa 1440 × 960 px; hospedagens, 1000 × 1000; destinos, 1200 × 800; destaques, 900 × 900. Essas fotos recebem recorte de preenchimento. Produtos usam 1000 × 1000 com a imagem inteira centralizada sobre fundo branco. O arquivo preparado é enviado tanto no modo local quanto ao Supabase. O limite continua em 5 MB; imagens acima de 40 megapixels são recusadas. GIFs preservam o arquivo original e a animação; vídeos seguem seu fluxo próprio. Imagens antigas e links externos mantêm o arquivo original, com o enquadramento feito pelo layout do site. Não requer SQL adicional.
+
 No painel `/admin`, os campos de imagem do perfil, hospedagens, destinos, produtos e destaques permitem **Enviar imagem**, visualizar a prévia e **Remover**. O link de imagem continua disponível em **Usar um link de imagem**. São aceitos JPG, PNG, WebP e GIF de até 5 MB. Após enviar ou remover, clique em **Salvar alterações** para publicar.
 
 Execute [`supabase/storage.sql`](supabase/storage.sql) uma vez no SQL Editor do projeto existente. Ele cria o bucket público `site-images`, limita formatos/tamanho e permite envio somente aos usuários de `site_admins`. O SQL é reaplicável. A chave publicável continua sendo suficiente no navegador; não adicione `service_role` ao frontend. Arquivos enviados têm nomes únicos e não substituem imagens publicadas. Remover no formulário retira a referência ao salvar, preservando arquivos que podem estar em uso em outro conteúdo.

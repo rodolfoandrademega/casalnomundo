@@ -3,8 +3,9 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const {webcrypto}=require('node:crypto');
-function setup(hostname='example.com',fetch=()=>{throw new Error('unexpected fetch')}) {
-  const context={window:{},Uint8Array,crypto:webcrypto,location:{hostname},fetch};
+function setup(hostname='example.com',fetch=()=>{throw new Error('unexpected fetch')},overrides={}) {
+  const document={createElement:()=>({getContext:()=>({fillRect(){},drawImage(){}}),toBlob(callback){callback(new Blob([Buffer.from('89504e470d0a1a0a00000000','hex')],{type:'image/png'}))}})};
+  const context={window:{},Uint8Array,File,Blob,document,createImageBitmap:async()=>({width:4000,height:3000,close(){}}),crypto:webcrypto,location:{hostname},fetch,...overrides};
   vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../image-upload.js'),'utf8'),context);
   return context.window.CNM_IMAGES;
 }
@@ -16,6 +17,34 @@ test('validates format, size and signature before any upload',async()=>{
   await assert.rejects(images.validate(new File(['not a png'],'x.png',{type:'image/png'})),/formato/);
   await assert.rejects(images.validate(new File([],'empty.png',{type:'image/png'})),/vazia/);
   await assert.rejects(images.validate({size:5*1024*1024+1,type:'image/png'}),/5 MB/);
+});
+test('section formats fill photos without distortion and keep the entire product inside its frame',()=>{
+ const images=setup();
+ for(const section of ['profile','stay','destinations','highlights','products']){
+  const format=images.FORMATS[section],box=images.placement(4000,2000,format);
+  assert.equal(box.width/box.height,2);
+  if(section==='products'){assert(box.width<=format.width&&box.height<=format.height);assert.equal(box.y,250);}
+  else{assert(box.width>=format.width&&box.height>=format.height);assert(box.x<=0&&box.y<=0);}
+ }
+});
+test('upload sends the resized file with the correct section and closes decoded resources',async()=>{
+ let frame,draw,closed=false,uploaded;
+ const images=setup('example.com',undefined,{
+  createImageBitmap:async()=>({width:4000,height:2000,close(){closed=true}}),
+  document:{createElement:()=>frame={getContext:()=>({fillRect(){},drawImage(...args){draw=args}}),toBlob(callback){callback(new Blob([Buffer.from('89504e470d0a1a0a00000000','hex')],{type:'image/png'}))}}}
+ });
+ const original=png(),client={storage:{from:()=>({upload:async(key,file)=>{uploaded={key,file};return {}},getPublicUrl:()=>({data:{publicUrl:'https://example.com/image.png'}})})}};
+ await images.upload(original,{client,admin:true,section:'products'});
+ assert.equal(frame.width,1000);assert.equal(frame.height,1000);assert.equal(draw[2],250);assert.equal(draw[3],1000);assert.equal(draw[4],500);
+ assert.notEqual(uploaded.file,original);assert.match(uploaded.key,/images\/products\//);assert(closed);
+});
+test('failed image decoding prevents upload while GIFs remain animated originals',async()=>{
+ let uploads=0;const images=setup('example.com',undefined,{createImageBitmap:async()=>{throw new Error('decode')}});
+ const client={storage:{from:()=>({upload:async()=>{uploads++;return {}},getPublicUrl:()=>({data:{publicUrl:'https://example.com/a.gif'}})})}};
+ await assert.rejects(images.upload(png(),{client,admin:true,section:'profile'}),/ajustar/);assert.equal(uploads,0);
+ const gif=new File(['GIF89a...'],'animation.gif',{type:'image/gif'});
+ assert.equal(await images.prepare(gif,'profile'),gif);
+ await images.upload(gif,{client,admin:true,section:'profile'});assert.equal(uploads,1);
 });
 test('uploads as an admin with a new immutable key and returns a public URL',async()=>{
   const images=setup(),calls=[];

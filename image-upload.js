@@ -3,6 +3,39 @@
   const TYPES = {'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
   const MAX_VIDEO_BYTES=25*1024*1024;
   const VIDEO_TYPES={'video/mp4':'mp4','video/webm':'webm'};
+  const FORMATS={profile:{width:1440,height:960,fit:'cover',positionY:.39},stay:{width:1000,height:1000,fit:'cover'},destinations:{width:1200,height:800,fit:'cover'},highlights:{width:900,height:900,fit:'cover'},products:{width:1000,height:1000,fit:'contain'}};
+  function placement(width,height,format){
+    const scale=(format.fit==='contain'?Math.min:Math.max)(format.width/width,format.height/height);
+    const drawWidth=width*scale,drawHeight=height*scale;
+    return {x:(format.width-drawWidth)/2,y:(format.height-drawHeight)*(format.positionY??.5),width:drawWidth,height:drawHeight};
+  }
+  async function prepare(file,section){
+    // Preserve animated GIFs and videos. Their display is fitted by the site CSS.
+    if(file.type==='image/gif'||Object.hasOwn(VIDEO_TYPES,file.type))return file;
+    const format=FORMATS[section]||{width:1200,height:800,fit:'contain'};
+    let source,objectUrl;
+    try{
+      if(typeof createImageBitmap==='function')source=await createImageBitmap(file,{imageOrientation:'from-image'});
+      else{
+        objectUrl=URL.createObjectURL(file);
+        source=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('decode'));img.src=objectUrl;});
+      }
+      const width=source.width,height=source.height;
+      if(!width||!height||width*height>40000000)throw new Error('dimensions');
+      const canvas=document.createElement('canvas');canvas.width=format.width;canvas.height=format.height;
+      const context=canvas.getContext('2d');if(!context)throw new Error('canvas');
+      // White padding keeps the full product visible, including JPEGs without transparency.
+      if(format.fit==='contain'){context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);}
+      context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';
+      const box=placement(width,height,format);context.drawImage(source,box.x,box.y,box.width,box.height);
+      const encode=type=>new Promise(resolve=>canvas.toBlob(resolve,type,.88));
+      let blob=await encode(file.type);
+      if(blob?.size>MAX_BYTES)blob=await encode('image/webp');
+      if(!blob||!blob.size||blob.size>MAX_BYTES)throw new Error('encode');
+      const result=new File([blob],'imagem.'+(TYPES[blob.type]||'png'),{type:blob.type});await validate(result);return result;
+    }catch(_){throw new Error('Não foi possível ajustar esta imagem. Escolha outra imagem JPG, PNG ou WebP com até 40 megapixels.');}
+    finally{source?.close?.();if(objectUrl)URL.revokeObjectURL(objectUrl);}
+  }
   async function validate(file,{allowVideo=false}={}) {
     if (!file || !file.size) throw new Error('Escolha uma imagem que não esteja vazia.');
     const video=allowVideo&&Object.hasOwn(VIDEO_TYPES,file.type);
@@ -44,6 +77,7 @@
         if(error)throw new Error('Não foi possível enviar o vídeo. Verifique a conexão e tente novamente.');
         return bucket.getPublicUrl(signed.path).data.publicUrl;
       }
+      file=await prepare(file,section);
       const folder=['profile','stay','destinations','products','highlights'].includes(section)?section+'/':'';
       const key=`images/${folder}${crypto.randomUUID()}.${TYPES[file.type]}`;
       const bucket=client.storage.from('site-images');
@@ -58,11 +92,12 @@
       return data.publicUrl;
     }
     if (local && !client && ['localhost','127.0.0.1','[::1]'].includes(location.hostname)) {
+      if(!video)file=await prepare(file,section);
       const response=await fetch(video?'/api/media':'/api/uploads',{method:'POST',headers:{'Content-Type':file.type},body:file});
       if (!response.ok) throw new Error('Não foi possível enviar. Confira se o servidor local está atualizado.');
       return (await response.json()).url;
     }
     throw new Error('Entre com uma conta de administrador para enviar imagens.');
   }
-  window.CNM_IMAGES={validate,upload,previewUrl,MAX_BYTES,MAX_VIDEO_BYTES};
+  window.CNM_IMAGES={validate,upload,prepare,placement,FORMATS,previewUrl,MAX_BYTES,MAX_VIDEO_BYTES};
 })();
