@@ -1,12 +1,18 @@
 (() => {
   const KEY = 'cnm.pageData.v1';
   const esc = (value = '') => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const safeUrl = value => /^(https?:\/\/|\.\/|\/)/i.test(String(value || '')) ? String(value) : '#';
-  const image = (src, alt, cls = '') => `<img${cls ? ` class="${esc(cls)}"` : ''} src="${esc(safeUrl(src))}" alt="${esc(alt || '')}" loading="lazy">`;
+  const record=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+  const text=value=>typeof value==='string'||typeof value==='number'?String(value):'';
+  const list=value=>Array.isArray(value)?value.filter(item=>item&&typeof item==='object'&&!Array.isArray(item)):[];
+  function normalizeContent(value){const d=record(value),profile=record(d.profile),items=entries=>list(entries).map(item=>({...item,title:text(item.title),label:text(item.label),description:text(item.description),image:text(item.image),url:text(item.url),linkLabel:text(item.linkLabel)})).filter(item=>item.title||item.label||item.description||item.image||item.url||(Array.isArray(item.links)&&item.links.length));return {...d,profile:{...profile,name:text(profile.name),eyebrow:text(profile.eyebrow),subtitle:text(profile.subtitle)},stays:items(d.stays??(d.stay?[d.stay]:[])).map(item=>({...item,facts:Array.isArray(item.facts)?item.facts.map(text).filter(Boolean):[]})),destinations:items(d.destinations),highlights:items(d.highlights),products:items(d.products??(d.product?[d.product]:[])).map(item=>({...item,links:items(item.links)})),socials:items(d.socials),contact:record(d.contact)};}
+  function safeUrl(value){const url=text(value).trim();if(!url||/[\\\u0000-\u001f\u007f]/.test(url))return '';if(/^https?:\/\//i.test(url)){try{const parsed=new URL(url);return parsed.hostname?parsed.href:'';}catch(_){return '';}}return /^(\/(?!\/)|\.\.?\/)/.test(url)||/^[\w-]+\.(?:jpe?g|png|webp|gif|mp4|webm)$/i.test(url)?url:'';}
+  const placeholder=(alt,cls='')=>`<div class="media-placeholder ${esc(cls)}" role="img" aria-label="${esc(alt||'Imagem indisponível')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg></div>`;
+  const image = (src, alt, cls = '') => safeUrl(src)?`<img${cls ? ` class="${esc(cls)}"` : ''} src="${esc(safeUrl(src))}" alt="${esc(alt || '')}" loading="lazy" decoding="async">`:placeholder(alt,cls);
   const seenPromotions=new Set();let stopPromotionObserver=()=>{};
   const anchor = (url, content, cls = '', trackId = '', label = '') => {
+    const href=safeUrl(url);if(!href)return `<div class="${esc(cls)} is-unlinked">${content}</div>`;
     const section=window.CNM_ANALYTICS.sectionForLegacy(trackId),promotion=window.CNM_ANALYTICS.promotionId(section,url),id=promotion||trackId;
-    return `<a${cls ? ` class="${esc(cls)}"` : ''} href="${esc(safeUrl(url))}"${id ? ` data-track="${esc(id)}" data-label="${esc(label)}"` : ''}${promotion?` data-promotion="${esc(promotion)}"`:''} target="_blank" rel="noopener">${content}</a>`;
+    return `<a${cls ? ` class="${esc(cls)}"` : ''} href="${esc(safeUrl(url))}"${id ? ` data-track="${esc(id)}" data-label="${esc(label)}"` : ''}${promotion?` data-promotion="${esc(promotion)}"`:''} target="_blank" rel="noopener noreferrer">${content}</a>`;
   };
 
   // Brand SVGs: Simple Icons (CC0), https://github.com/simple-icons/simple-icons
@@ -25,49 +31,56 @@
   }
   const socialArrow = '<svg class="social-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12 12 4M4 4h8v8"/></svg>';
 
-  function render(d) {
-    const profile=window.CNM_PROFILE.normalize(d.profile||{});
+  function render(value) {
+    const d=normalizeContent(value);
+    const profile=window.CNM_PROFILE.normalize(d.profile||{});profile.image=safeUrl(profile.image);profile.video=safeUrl(profile.video);
     window.CNM_PROFILE.applySections(document,profile.sections);
     document.title=profile.siteTitle;window.CNM_PROFILE.applyColors(document.documentElement,profile.colors);
+    document.querySelector('meta[name="description"]').setAttribute('content',[text(profile.name),text(profile.subtitle)].filter(Boolean).join(' · ').slice(0,180)||'Links, novidades e indicações na MegaBio.');
     document.querySelector('meta[name="theme-color"]').setAttribute('content',profile.colors.background);
     const hero = document.querySelector('#hero');
-    window.CNM_PROFILE.renderHero(hero,profile);
+    window.CNM_PROFILE.renderHero(hero,profile);hero.hidden=!profile.image&&!(profile.heroType==='video'&&profile.video);
     hero.setAttribute('aria-label','Capa de '+(profile.name||'MegaBio'));
-    document.querySelector('#identity').innerHTML = `<p class="eyebrow">${esc(d.profile?.eyebrow || '')}</p><h1>${esc(d.profile?.name || '')}</h1><p class="subline">${esc(d.profile?.subtitle || '')}</p>`;
+    document.querySelector('#identity').innerHTML = `<p class="eyebrow">${esc(d.profile?.eyebrow || '')}</p><h1>${esc(d.profile?.name || 'MegaBio')}</h1><p class="subline">${esc(d.profile?.subtitle || '')}</p>`;
 
     const stays = d.stays || (d.stay ? [d.stay] : []);
-    document.querySelector('#stays').innerHTML = stays.map((s,i) => anchor(s.url, `${image(s.image, s.title, 'stay-photo')}<span class="stay-copy"><span class="label">${esc(s.label || '')}</span><strong class="stay-title">${esc(s.title || '')}</strong><p>${esc(s.description || '')}</p><span class="facts">${(s.facts || []).map(f => `<span>${esc(f)}</span>`).join('')}</span></span>`, 'stay', `stay_${i}`, s.title || 'Hospedagem')).join('');
+    document.querySelector('#stays').innerHTML = stays.map((s,i) => anchor(s.url, `${image(s.image, s.title, 'stay-photo')}<div class="stay-copy"><span class="label">${esc(s.label || '')}</span><strong class="stay-title">${esc(s.title || '')}</strong><p>${esc(s.description || '')}</p><span class="facts">${(s.facts || []).map(f => `<span>${esc(f)}</span>`).join('')}</span></div>`, 'stay', `stay_${i}`, s.title || 'Hospedagem')).join('');
 
-    document.querySelector('#destination-grid').innerHTML = (d.destinations || []).map((x,i) => anchor(x.url, `${image(x.image, x.title)}<span class="destination-copy"><h3>${esc(x.title || '')}</h3><p>${esc(x.description || '')}</p><span class="more">${esc(x.linkLabel || 'Guia do destino')} ↗</span></span>`, 'destination', `destination_${i}`, x.title)).join('');
+    document.querySelector('#destination-grid').innerHTML = (d.destinations || []).map((x,i) => anchor(x.url, `${image(x.image, x.title)}<div class="destination-copy"><h3>${esc(x.title || '')}</h3><p>${esc(x.description || '')}</p><span class="more">${esc(x.linkLabel || 'Guia do destino')} ↗</span></div>`, 'destination', `destination_${i}`, x.title)).join('');
 
     document.querySelector('#highlights').innerHTML = (d.highlights || []).map((h,i) => anchor(h.url, `${image(h.image, h.title)}<span class="highlight-copy"><span class="label">${esc(h.label || 'Destaque')}</span><strong>${esc(h.title || '')}</strong><span>${esc(h.description || '')}</span></span><span class="highlight-arrow" aria-hidden="true">↗</span>`, 'highlight', `highlight_${i}`, h.title)).join('');
 
     document.querySelectorAll('#highlights .highlight').forEach((node,index)=>window.CNM_PROFILE.applyHighlightCard(node,(d.highlights||[])[index]?.card));
-    document.querySelector('#products').innerHTML = (d.products || (d.product ? [d.product] : [])).map((p,i) => `<article class="product">${image(p.image,p.title)}<div><h3>${esc(p.title || '')}</h3><p>${esc(p.description || '')}</p><div class="buy-links">${(p.links || []).map((l,j) => anchor(l.url, `${esc(l.label)} ↗`, '', `product_${i}_shop_${j}`, `${p.title} · ${l.label}`)).join('')}</div></div></article>`).join('');
-    document.querySelector('#socials').innerHTML = (d.socials || []).map((soc,i) => anchor(soc.url, `${socialIcon(soc)}<span class="social-label">${esc(soc.label)}</span>${socialArrow}`, 'social', `social_${i}`, soc.label)).join('');
+    document.querySelector('#products').innerHTML = (d.products || (d.product ? [d.product] : [])).map((p,i) => `<article class="product">${image(p.image,p.title)}<div><h3>${esc(p.title || '')}</h3><p>${esc(p.description || '')}</p><div class="buy-links">${((p.links || []).filter(link=>safeUrl(link.url))).map((l,j) => anchor(l.url, `${esc(l.label)} ↗`, '', `product_${i}_shop_${j}`, `${p.title} · ${l.label}`)).join('')}</div></div></article>`).join('');
+    document.querySelector('#socials').innerHTML = (d.socials || []).filter(soc=>safeUrl(soc.url)).map((soc,i) => anchor(soc.url, `${socialIcon(soc)}<span class="social-label">${esc(soc.label)}</span>${socialArrow}`, 'social', `social_${i}`, soc.label)).join('');
     const contact = d.contact || {};
-    document.querySelector('#contact').innerHTML = anchor(contact.url, `${esc(contact.label || 'Contato')} ↗`, 'contact', 'contact', contact.label);
+    document.querySelector('#contact').innerHTML = safeUrl(contact.url)?anchor(contact.url, `${esc(text(contact.label) || 'Contato')} ↗`, 'contact', 'contact', text(contact.label)):'';
+    for(const [key,id] of Object.entries({stays:'stays',destinations:'destination-grid',highlights:'highlights',products:'products',socials:'socials'})){const section=document.querySelector(`[data-bio-section="${key}"]`);section.hidden=!profile.sections[key].enabled||!(document.getElementById(id).children.length||(key==='socials'&&document.getElementById('contact').children.length));}
+    document.body.classList.add('content-ready');
+    const loading=document.getElementById('page-load-status');if(loading)loading.hidden=true;
     stopPromotionObserver();stopPromotionObserver=window.CNM_PROMOTION_VIEWS.watch(document,track,seenPromotions);
   }
 
+  async function deadline(operation,ms){let timer;try{return await Promise.race([operation,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Content timed out')),ms);})]);}finally{clearTimeout(timer);}}
+  async function fetchContent(url){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4000);try{const response=await fetch(url,{cache:'no-store',signal:controller.signal});return response.ok?await response.json():null;}finally{clearTimeout(timer);}}
   async function init() {
     let data = window.CNM_DEFAULT_DATA || {};
     let serverLoaded = false;
-    try { if (window.CNM_SUPABASE_READY) await window.CNM_SUPABASE_READY; } catch (_) {}
+    try { if (window.CNM_SUPABASE_READY) await deadline(window.CNM_SUPABASE_READY,4000); } catch (_) {}
     if (window.CNM_SUPABASE_CLIENT) {
       try {
-        const {data:row,error} = await window.CNM_SUPABASE_CLIENT.from('site_content').select('payload').eq('id',1).maybeSingle();
+        const {data:row,error} = await deadline(window.CNM_SUPABASE_CLIENT.from('site_content').select('payload').eq('id',1).maybeSingle(),6000);
         if (!error && row?.payload) { data = row.payload; serverLoaded = true; }
       } catch (_) {}
     }
     if (!serverLoaded) {
-    try { const r = await fetch('/api/content', {cache:'no-store'}); if (r.ok) { data = await r.json(); serverLoaded = true; } } catch (_) {}
+    try { const fallback = await fetchContent('/api/content'); if (fallback) { data = fallback; serverLoaded = true; } } catch (_) {}
     }
-    if (!serverLoaded) { try { const r = await fetch('./conteudo.json', {cache:'no-store'}); if (r.ok) data = await r.json(); } catch (_) {} }
+    if (!serverLoaded) { try { const fallback = await fetchContent('./conteudo.json'); if (fallback) {data = fallback;serverLoaded=true;} } catch (_) {} }
     if (!serverLoaded) { try { const saved = localStorage.getItem(KEY); if (saved) data = JSON.parse(saved); } catch (_) {} }
     render(data);
   }
-  window.CasalPage = { KEY, render };
+  window.CasalPage = { KEY, render, normalizeContent };
   async function track(payload) {
     try { if (window.CNM_SUPABASE_READY) await window.CNM_SUPABASE_READY; } catch (_) {}
     if (window.CNM_SUPABASE_CLIENT) {
@@ -76,7 +89,6 @@
       try { await window.CNM_SUPABASE_CLIENT.from('site_events').insert(row); } catch (_) {}
       return;
     }
-    const body = JSON.stringify(payload);
     const endpoint = payload.type === 'location' ? '/api/location' : '/api/track';
     const localPayload = payload.type === 'location' ? {lat:payload.lat,lon:payload.lon} : payload;
     const localBody = JSON.stringify(localPayload);
@@ -84,10 +96,11 @@
     fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:localBody,keepalive:true}).catch(()=>{});
   }
   document.addEventListener('click', e => {
-    const link = e.target.closest('[data-track]');
-    if (link) track({type:'click',id:link.dataset.track,label:link.dataset.label || link.textContent.trim()});
+    const link = e.target.closest?.('[data-track]');
+    if (link&&!link.closest('[hidden]')) track({type:'click',id:link.dataset.track,label:link.dataset.label || link.textContent.trim()});
 
   });
+  document.addEventListener('error',event=>{const node=event.target;if(node.tagName==='IMG'&&document.querySelector('.page')?.contains(node)){node.outerHTML=placeholder(node.alt,node.className);}},true);
   track({type:'visit',id:'page',label:'Página'});
   if ('IntersectionObserver' in window) {
     const seen = new Set(), timers = new Map();

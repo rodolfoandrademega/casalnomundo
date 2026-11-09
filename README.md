@@ -57,6 +57,8 @@ Abra `http://127.0.0.1:8000` e acesse o painel em `http://127.0.0.1:8000/admin`.
 
 ## Relatórios e privacidade
 
+A página pública tolera listas incompletas e itens inválidos sem interromper as outras seções. Blocos sem conteúdo ficam ocultos. Links vazios ou inseguros não viram botões para `#`; imagens locais simples são aceitas, e imagens ausentes ou que falham recebem uma prévia neutra. As consultas de configuração/conteúdo têm prazo limitado e os dados estáticos publicados têm preferência sobre rascunhos antigos do navegador quando o backend não responde. Há estado de carregamento, foco visível, atalho para o conteúdo, textos com quebra e áreas de toque maiores no celular. A imagem de capa pode ocupar menos altura em telas estreitas; GIFs e vídeos mantêm seu comportamento. Os efeitos continuam exclusivos dos cards de destaques e respeitam movimento reduzido. Verificações de regressão: `JSDOM_MODULE=/caminho/node_modules/jsdom node --test tests/public-page.test.cjs tests/megabio-dashboard.test.cjs tests/promotion-observer.test.cjs`.
+
 Visitas, cliques e seções vistas são registrados sem IP ou identificador individual. O rodapé não oferece coleta de localização. O relatório de regiões preserva somente os dados históricos compartilhados com consentimento, sem solicitar novas localizações.
 
 ## Listas, lixeira e histórico nativo

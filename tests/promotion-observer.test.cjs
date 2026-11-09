@@ -13,12 +13,13 @@ test('counts a qualified exposure once per page, after one second',()=>{
  const f=fixture();f.entry();assert.equal(f.sent.length,0);f.tick();assert.equal(f.sent.length,1);assert.equal(f.sent[0].id,'view:promo_highlights_stable');f.entry();f.tick();assert.equal(f.sent.length,1);f.stop();
 });
 test('does not count short, hidden, offscreen or detached exposures',()=>{
- for(const kind of ['short','hidden','offscreen','detached']){
+ for(const kind of ['short','hidden','offscreen','detached','section-hidden']){
   const f=fixture();f.entry();
   if(kind==='short')f.entry(0);
   if(kind==='hidden'){f.doc.visibilityState='hidden';f.listeners.visibilitychange();}
   if(kind==='offscreen')f.node.getBoundingClientRect=()=>({top:800,bottom:900,left:0,right:100,width:100,height:100});
   if(kind==='detached')f.node.isConnected=false;
+  if(kind==='section-hidden')f.node.closest=()=>({hidden:true});
   f.tick();assert.equal(f.sent.length,0,kind);f.stop();
  }
 });

@@ -6,11 +6,12 @@
     const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
       const node=entry.target,id=node.dataset.promotion;
       if(!id||seen.has(id))return;
+      if(node.closest?.('[hidden]')){cancel(node);return;}
       if(!entry.isIntersecting||entry.intersectionRatio<.5){cancel(node);return;}
       if(timers.has(node)||doc.visibilityState==='hidden')return;
       timers.set(node,setTimeout(()=>{
         timers.delete(node);
-        if(!node.isConnected||seen.has(id)||doc.visibilityState==='hidden')return;
+        if(!node.isConnected||seen.has(id)||doc.visibilityState==='hidden'||node.closest?.('[hidden]'))return;
         const rect=node.getBoundingClientRect(),height=Math.max(0,Math.min(rect.bottom,window.innerHeight)-Math.max(rect.top,0)),width=Math.max(0,Math.min(rect.right,window.innerWidth)-Math.max(rect.left,0));
         if(rect.width>0&&rect.height>0&&width*height/(rect.width*rect.height)>=.5){seen.add(id);send({type:'section',id:'view:'+id,label:node.dataset.label||'Divulgação'});}
       },1000));
