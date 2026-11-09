@@ -4,7 +4,7 @@
     stays:{view:'stay',one:'hospedagem',title:'Hospedagens',description:'Organize suas indicações de hospedagem em um só lugar.',fields:[['label','Localização'],['title','Nome da hospedagem',true],['description','Descrição',false,'textarea'],['facts','Detalhes separados por vírgula'],['url','Link do anúncio',true]]},
     destinations:{view:'destinations',one:'destino',title:'Destinos',description:'Seus guias e lugares favoritos, prontos para explorar.',fields:[['title','Nome do destino',true],['description','Descrição',false,'textarea'],['url','Link do guia ou mapa',true],['linkLabel','Texto do link']]},
     products:{view:'products',one:'produto',title:'Produtos',description:'Gerencie os achados que você recomenda e suas lojas.',fields:[['title','Nome do produto',true],['description','Descrição',false,'textarea']]},
-    highlights:{view:'highlights',one:'destaque',title:'Destaques',description:'Campanhas e novidades que merecem atenção.',fields:[['label','Chamada curta'],['title','Título do destaque',true],['description','Descrição',false,'textarea'],['url','Link de destino',true]]},
+    highlights:{view:'highlights',one:'destaque',title:'Destaques',description:'Campanhas e novidades que merecem atenção.',fields:[['label','Chamada curta'],['title','Título do destaque',true],['buttonLabel','Texto do botão'],['description','Descrição',false,'textarea'],['url','Link de destino',true]]},
     socials:{view:'socials',one:'rede',title:'Redes e contato',description:'Mantenha seus perfis e canais de contato organizados.',fields:[['label','Nome da rede',true],['url','Link do perfil',true]]}
   };
   const safeUrl=value=>{const url=String(value||'').trim();return /^(https?:\/\/|\.?\/)/i.test(url)?url:'';};
@@ -31,6 +31,7 @@
     function close(){hide(dialog);focusList();editor=null;changed=false;}
     function requestClose(){if(isBusy()||saving)return;if(changed){dialog.querySelector('.discard-confirm').hidden=false;}else close();}
     function shopFields(){if(!editor||editor.root!=='products')return;const list=dialog.querySelector('#record-shops');list.innerHTML=(editor.draft.links||[]).map(shop=>`<div class="shop-record"><details ${shop._editing?'open':''}><summary><span>${esc(shop.label||'Nova loja')}</span><span>Editar</span></summary><div class="fields"><div class="field"><label>Nome da loja<input data-shop-id="${esc(shop._id)}" data-shop-key="label" value="${esc(shop.label||'')}" required></label></div><div class="field"><label>Link da loja<input data-shop-id="${esc(shop._id)}" data-shop-key="url" value="${esc(shop.url||'')}" inputmode="url" required></label></div></div></details><button class="button record-trash" type="button" data-record-remove-shop="${esc(shop._id)}">Excluir loja</button></div>`).join('')||'<p class="hint">Nenhuma loja adicionada.</p>';}
+    function paintHighlightButton(){if(editor?.root!=='highlights')return;const node=dialog.querySelector('#highlight-button-preview');node.textContent=String(editor.draft.buttonLabel||'Saiba mais').slice(0,60)+' ↗';window.CNM_PROFILE.applyHighlightButton(node,editor.draft.button);const b=window.CNM_PROFILE.buttons(editor.draft.button);dialog.querySelector('#highlight-button-contrast-note').textContent=b.customColors&&window.CNM_PROFILE.contrast(b.background,b.text)<4.5?'Ajuste o texto ou o fundo para melhorar o contraste.':'';}
     function open(root,ref){
       const schema=schemas[root];if(!schema||!can(schema.view)||isBusy())return;
       const source=ref?record(root,ref):null;if(ref&&!source)return;
@@ -39,7 +40,7 @@
       dialog.querySelector('#record-dialog-title').textContent=(source?'Editar ':'Adicionar ')+schema.one;
       dialog.querySelector('.record-editor-message').textContent='';dialog.querySelector('.discard-confirm').hidden=true;
       dialog.querySelector('#record-dialog-body').innerHTML=`<div class="fields">${schema.fields.map(([key,label,required,type])=>`<div class="field${type==='textarea'?' full':''}"><label for="record-${key}">${label}</label>${type==='textarea'?`<textarea id="record-${key}" data-record-field="${key}">${esc(editor.draft[key]||'')}</textarea>`:`<input id="record-${key}" data-record-field="${key}" value="${esc(Array.isArray(editor.draft[key])?editor.draft[key].join(', '):editor.draft[key]||'')}" ${required?'required':''} ${key==='url'?'inputmode="url"':''}>`}</div>`).join('')}</div>${root!=='socials'?mediaField('draft.image',editor.draft.image):''}${root==='products'?'<div class="shop-list-heading"><div><h3>Lojas e links</h3><p>Edite as lojas deste produto.</p></div><button class="button" type="button" data-record-add-shop>+ Adicionar loja</button></div><div id="record-shops"></div><p class="hint">Lojas excluídas vão para a lixeira quando você salvar o produto.</p>':''}`;
-      shopFields();show(dialog);
+      if(root==='highlights'){dialog.querySelector('#record-buttonLabel').maxLength=60;editor.draft.button=window.CNM_PROFILE.buttons(editor.draft.button);dialog.querySelector('#record-dialog-body').insertAdjacentHTML('beforeend',`<div class="highlight-button-editor"><h3>Botão deste destaque</h3><p class="hint">Personalização individual, sem alterar os outros destaques.</p>${window.CNM_PROFILE.buttonFields(editor.draft,{highlight:true})}<div class="highlight-button-preview"><span class="hint">Prévia do botão</span><span class="highlight-cta" id="highlight-button-preview"></span></div></div>`);paintHighlightButton();}shopFields();show(dialog);
     }
     dialog.addEventListener('cancel',event=>{event.preventDefault();requestClose();});
     deleteDialog.addEventListener('cancel',event=>{if(saving){event.preventDefault();}});
@@ -47,7 +48,8 @@
       const target=event.target;
       if(target.dataset.recordSearch){const root=target.dataset.recordSearch,selection=target.selectionStart;state[root].query=target.value;render(root);const replacement=main.querySelector(`[data-record-search="${root}"]`);replacement.focus();try{replacement.setSelectionRange(selection,selection);}catch(_){}return;}
       if(!editor||!dialog.contains(target))return;
-      if(target.dataset.recordField){editor.draft[target.dataset.recordField]=target.value;changed=true;}
+      if(target.dataset.recordField){editor.draft[target.dataset.recordField]=target.dataset.recordField==='buttonLabel'?target.value.slice(0,60):target.value;changed=true;paintHighlightButton();}
+      if(target.dataset.recordButton&&editor.root==='highlights'){editor.draft.button[target.dataset.recordButton]=target.type==='checkbox'?target.checked:target.value;changed=true;paintHighlightButton();}
       if(target.dataset.shopId){const shop=editor.draft.links.find(item=>item._id===target.dataset.shopId);if(shop){shop[target.dataset.shopKey]=target.value;changed=true;}}
       if(target.matches('[data-image-url]')){editor.draft.image=target.value;changed=true;previewMedia(target.closest('[data-image-editor]'),target.value);}
     });
@@ -57,6 +59,7 @@
       if(target.closest('[data-close-record]')){requestClose();return;}
       if(target.closest('[data-continue-record]')){dialog.querySelector('.discard-confirm').hidden=true;return;}
       if(target.closest('[data-discard-record]')){close();return;}
+      if(target.closest('[data-reset-highlight-button]')&&editor?.root==='highlights'){editor.draft.button=window.CNM_PROFILE.buttons();dialog.querySelectorAll('[data-record-button]').forEach(input=>{const value=editor.draft.button[input.dataset.recordButton];if(input.type==='checkbox')input.checked=value;else input.value=value;});changed=true;paintHighlightButton();return;}
       const add=target.closest('[data-record-add]');if(add){open(add.dataset.recordAdd);return;}
       const edit=target.closest('[data-record-edit]');if(edit){open(edit.dataset.recordEdit,edit.dataset.recordRef);return;}
       const clear=target.closest('[data-clear-search]');if(clear){state[clear.dataset.clearSearch].query='';render(clear.dataset.clearSearch);return;}
@@ -75,6 +78,7 @@
       if(item.url&&!safeUrl(item.url)){message.textContent='Informe um link com https:// ou um caminho válido.';return;}
       if(schema.fields.some(([key,,required])=>required&&!String(item[key]||'').trim())){message.textContent='Preencha os campos obrigatórios.';return;}
       if(editor.root==='products'&&(item.links||[]).some(shop=>!shop.label.trim()||!safeUrl(shop.url))){message.textContent='Informe nome e link válido de cada loja.';return;}
+      if(editor.root==='highlights'){item.button=window.CNM_PROFILE.buttons(item.button);item.buttonLabel=String(item.buttonLabel||'Saiba mais').trim().slice(0,60)||'Saiba mais';}
       if(typeof item.facts==='string')item.facts=item.facts.split(',').map(value=>value.trim()).filter(Boolean);
       if(item.links)item.links=item.links.map(({_editing,...shop})=>shop);
       saving=true;const buttons=[...dialog.querySelectorAll('button')];buttons.forEach(button=>button.disabled=true);message.textContent='Salvando item…';

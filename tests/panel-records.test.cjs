@@ -2,6 +2,7 @@ const {test}=require('node:test');const assert=require('node:assert/strict');con
 function fixture({allowed=true,failDelete=false}={}){
  const {JSDOM}=require(process.env.JSDOM_MODULE),dom=new JSDOM(fs.readFileSync(path.join(__dirname,'../painel.html'),'utf8'),{runScripts:'outside-only',url:'https://example.com/admin'}),{window}=dom;
  window.structuredClone=structuredClone;window.document.body.classList.remove('auth-pending');window.document.getElementById('view-stay').classList.add('active');
+ window.eval(fs.readFileSync(path.join(__dirname,'../profile-design.js'),'utf8'));
  window.eval(fs.readFileSync(path.join(__dirname,'../panel-records.js'),'utf8'));
  const data={stays:[{_id:'stay-one',title:'Hospedagem A',description:'Descrição',url:'https://example.com/a',image:''}],products:[{_id:'product-one',title:'Produto A',links:[{_id:'shop-one',label:'Loja A',url:'https://example.com/shop'}]}],destinations:[],highlights:[],socials:[]},trash=[],commits=[];
  const controller=window.CNM_RECORDS.create({main:window.document.querySelector('.main'),getData:()=>data,can:()=>allowed,isBusy:()=>false,notify(){},mediaField:()=>'',previewMedia(){},async onCommit(root,ref,item){commits.push({root,ref,item});if(ref)data[root]=data[root].map(row=>row._id===ref?item:row);else data[root].push(item);},async onDelete(root,item){if(failDelete)throw new Error('Falha segura');trash.push(structuredClone(item));data[root]=data[root].filter(row=>row._id!==item._id);}});
@@ -41,5 +42,19 @@ test('shop deletion remains a draft until the parent product is saved',{skip:!en
  const {dom,window,data,node}=fixture();try{
   window.document.querySelector('[data-record-edit="products"]').click();node('record-dialog').querySelector('[data-record-remove-shop]').click();assert.equal(data.products[0].links.length,1);
   node('record-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(setImmediate);assert.equal(data.products[0].links.length,0);
+ }finally{dom.window.close();}
+});
+
+test('each highlight keeps its own button draft, color, animation and label until saved',{skip:!enabled},async()=>{
+ const {dom,window,data,node,controller,commits}=fixture();try{
+  data.highlights=[{_id:'h1',title:'Oferta A',url:'https://example.com/a'},{_id:'h2',title:'Oferta B',url:'https://example.com/b',button:{customColors:true,background:'#112233',animation:'pulse'}}];controller.render('highlights');
+  window.document.querySelector('[data-record-edit="highlights"]').click();
+  const edit=(key,value)=>{const input=window.document.querySelector('[data-record-button="'+key+'"]');if(input.type==='checkbox')input.checked=value;else input.value=value;input.dispatchEvent(new window.Event('input',{bubbles:true}));};
+  edit('customColors',true);edit('background','#336699');edit('animation','shine');
+  node('record-buttonLabel').value='Reservar agora';node('record-buttonLabel').dispatchEvent(new window.Event('input',{bubbles:true}));
+  assert.equal(node('highlight-button-preview').dataset.bioButtonEffect,'shine');assert.equal(node('highlight-button-preview').style.getPropertyValue('--bio-btn-bg'),'#336699');assert.match(node('highlight-button-preview').textContent,/Reservar agora/);assert.equal(data.highlights[0].button,undefined);
+  node('record-form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(setImmediate);
+  assert.equal(commits.length,1);assert.equal(data.highlights[0].button.background,'#336699');assert.equal(data.highlights[0].button.animation,'shine');assert.equal(data.highlights[0].buttonLabel,'Reservar agora');assert.equal(data.highlights[1].button.background,'#112233');assert.equal(data.highlights[1].button.animation,'pulse');
+  window.document.querySelector('[data-record-edit="highlights"]').click();window.document.querySelector('[data-reset-highlight-button]').click();assert.equal(node('highlight-button-preview').dataset.bioButtonEffect,'none');assert.equal(data.highlights[0].button.animation,'shine');
  }finally{dom.window.close();}
 });
