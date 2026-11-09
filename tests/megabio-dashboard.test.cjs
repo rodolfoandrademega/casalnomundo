@@ -33,5 +33,7 @@ test('public page renders stable measured links and preserves existing visits an
   assert.equal(window.document.querySelector('#stay-title').textContent,'Pousadas favoritas');assert.equal(window.document.querySelector('#places-title').textContent,'<img src=x onerror=alert(1)>');assert.equal(window.document.querySelector('#places-title img'),null);
   assert.equal(window.document.querySelector('#socials').closest('section').hidden,true);assert.equal(window.document.querySelector('#contact').closest('section').hidden,true);
   content.profile.sections.stays.enabled=true;window.CasalPage.render(content);assert.equal(window.document.querySelector('[data-bio-section="stays"]').hidden,false);assert(window.document.querySelector(`[data-promotion="${before}"]`));
+  content.profile.buttons={customColors:true,background:'#336699',animation:'shine',target:'contact'};window.CasalPage.render(content);
+  assert.equal(window.document.querySelector('.contact').dataset.bioButtonEffect,'shine');assert.equal(window.document.querySelector('.contact').dataset.bioButtonColors,'true');assert.equal(window.document.querySelector('.social').hasAttribute('data-bio-button'),false);assert.equal(window.document.documentElement.style.getPropertyValue('--bio-btn-bg'),'#336699');
  }finally{dom.window.close();}
 });

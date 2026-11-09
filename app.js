@@ -46,6 +46,7 @@
     document.querySelector('#socials').innerHTML = (d.socials || []).map((soc,i) => anchor(soc.url, `${socialIcon(soc)}<span class="social-label">${esc(soc.label)}</span>${socialArrow}`, 'social', `social_${i}`, soc.label)).join('');
     const contact = d.contact || {};
     document.querySelector('#contact').innerHTML = anchor(contact.url, `${esc(contact.label || 'Contato')} ↗`, 'contact', 'contact', contact.label);
+    window.CNM_PROFILE.applyButtons(document,profile.buttons);
     stopPromotionObserver();stopPromotionObserver=window.CNM_PROMOTION_VIEWS.watch(document,track,seenPromotions);
   }
 
