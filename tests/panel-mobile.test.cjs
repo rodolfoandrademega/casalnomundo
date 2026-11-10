@@ -69,7 +69,7 @@ test('backdrop closes the drawer and JSON actions collapse after selection',{ski
 async function panelSession(options){
  const result=fixture(),{window}=result;const analyticsReads=[];result.analyticsReads=analyticsReads;
  window.structuredClone=structuredClone;window.fetch=async()=>({ok:false});
- for(const file of ['defaults.js','permissions.js','image-upload.js','profile-design.js','megabio-analytics.js','panel-records.js','native-center.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
+ for(const file of ['defaults.js','permissions.js','image-upload.js','profile-design.js','megabio-analytics.js','website-model.js','website-editor.js','panel-records.js','native-center.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
  window.CNM_USERS={mount:async()=>{}};
  if(options.mapError)window.L={map(){throw new Error('Map container is not measurable');}};
  window.CNM_SUPABASE_CLIENT={rpc:(name,args)=>({then(resolve){return Promise.resolve(options.rpc?options.rpc(name,args):{error:{code:'PGRST202'}}).then(resolve)}}),auth:{getSession:async()=>({data:{session:{user:{id:'test-id'}}}})},from(table){return {
@@ -84,7 +84,7 @@ test('restricted editor keeps only permitted mobile menu sections and cannot rev
   assert(!window.document.body.classList.contains('auth-pending'));
   assert.equal(node('mobile-section-label').textContent,'Perfil e aparência');
   assert.equal(node('data-actions').hidden,true);assert.equal(node('save-toolbar').hidden,false);
-  const buttons=[...window.document.querySelectorAll('.menu button')].filter(button=>!button.hidden);
+  const buttons=[...window.document.querySelectorAll('.menu button')].filter(button=>!button.hidden&&!button.disabled);
   assert.deepEqual(buttons.map(button=>button.dataset.view),['profile']);
   resize(false);assert(node('data-actions').hidden);
   resize(true);node('mobile-menu-toggle').click();buttons[0].click();assert(node('mobile-menu-backdrop').hidden);
@@ -199,4 +199,27 @@ test('global button controls are removed while profile and highlight editors rem
   assert.equal(window.document.querySelector('[data-path^="profile.buttons."]'),null);assert.equal(window.document.querySelector('[data-reset-buttons]'),null);assert(!node('view-profile').textContent.includes('Botões e animações'));
   window.document.querySelector('[data-record-add="highlights"]').click();assert(node('highlight-card-preview'));assert(window.document.querySelector('[data-record-card="background"]'));
  }finally{dom.window.close();}
+});
+
+test('Site is native-only while delegated accounts see a disabled Em breve menu item',{skip:!enabled},async()=>{
+ let f=await panelSession({permissions:['profile','users']});try{assert.equal(f.node('website-menu').hidden,false);assert.equal(f.node('website-menu').disabled,true);assert.match(f.node('website-menu').textContent,/Em breve/);f.node('website-menu').click();assert.notEqual(f.node('page-title').textContent,'Site');assert.equal(f.node('view-website').textContent,'');}finally{f.dom.window.close();}
+ f=await panelSession({native:true});try{assert.equal(f.node('website-menu').disabled,false);f.node('website-menu').click();assert.equal(f.node('page-title').textContent,'Site');f.window.document.querySelector('[data-website-create]').click();assert(f.node('website-preview'));assert(f.window.document.querySelector('[data-website-add-section]'));}finally{f.dom.window.close();}
+});
+test('native site edits save only the website and preserve unrelated MegaBio drafts',{skip:!enabled},async()=>{
+ const original=JSON.parse(fs.readFileSync(path.join(__dirname,'../conteudo.json'),'utf8')),patches=[];
+ const f=await panelSession({native:true,content:original,rpc(name,args){if(name==='save_site_sections'){patches.push(args.patch);return {data:{payload:{...original,...args.patch},updated_at:'2026-11-10T15:00:00Z'}};}return {data:null};}});try{
+  const input=f.node('field-profile.name');input.value='Rascunho MegaBio';input.dispatchEvent(new f.window.Event('input',{bubbles:true}));f.node('website-menu').click();f.window.document.querySelector('[data-website-create]').click();const title=f.window.document.querySelector('[data-website-path="heroTitle"]');title.value='Meu novo site';title.dispatchEvent(new f.window.Event('input',{bubbles:true}));f.window.document.querySelector('[data-website-save]').click();await new Promise(setImmediate);
+  assert.equal(patches.length,1);assert.deepEqual(Object.keys(patches[0]),['website']);assert.equal(patches[0].website.heroTitle,'Meu novo site');assert.equal(patches[0].website.enabled,false);assert.equal(f.node('field-profile.name').value,'Rascunho MegaBio');assert.equal(f.node('save-status').textContent,'Alterações não salvas');
+ }finally{f.dom.window.close();}
+});
+
+test('native builder adds and archives offers with section-specific image uploads and publication controls',{skip:!enabled},async()=>{
+ const original=JSON.parse(fs.readFileSync(path.join(__dirname,'../conteudo.json'),'utf8')),patches=[];
+ const f=await panelSession({native:true,content:original,rpc(name,args){if(name==='save_site_sections'){patches.push(args.patch);return {data:{payload:{...original,...args.patch},updated_at:'2026-11-10T16:00:00Z'}};}return {data:null};}});try{
+  f.node('website-menu').click();f.window.document.querySelector('[data-website-create]').click();f.window.document.querySelector('[data-website-add-offer="0"]').click();
+  const set=(path,value)=>{const input=f.window.document.querySelector('[data-website-path="'+path+'"]');if(input.type==='checkbox')input.checked=value;else input.value=value;input.dispatchEvent(new f.window.Event('input',{bubbles:true}));};
+  set('sections.0.items.0.title','Pousada nova');set('sections.0.items.0.url','https://example.com/pousada');set('sections.0.items.0.price','R$ 350');set('sections.0.items.0.active',false);set('enabled',true);
+  assert.equal(f.window.document.querySelector('[data-upload-path="website.sections.0.items.0.image"]').dataset.imageSection,'stay');assert.equal(f.window.document.querySelector('[data-upload-path="website.heroImage"]').dataset.imageSection,'profile');
+  f.window.document.querySelector('[data-website-save]').click();await new Promise(setImmediate);assert.equal(patches[0].website.enabled,true);assert.equal(patches[0].website.sections[0].items[0].title,'Pousada nova');assert.equal(patches[0].website.sections[0].items[0].active,false);assert.equal(patches[0].website.sections[0].items[0].price,'R$ 350');
+ }finally{f.dom.window.close();}
 });

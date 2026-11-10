@@ -40,7 +40,7 @@ test('PostgreSQL enforces section permissions, native-only management and revoca
   await assert.rejects(db.query('select public.update_site_member($1,$2,$3)',[editor,['reports'],true]),/Access denied/);
   await assert.rejects(db.query("update public.site_members set permissions=array['reports'] where user_id=$1",[editor]),/permission denied/);
   let revision=(await db.query('select updated_at::text as revision from public.site_content')).rows[0].revision;
-  for(const patch of [{stays:[]},{permissions:['users']},{contact:{url:'changed'}}])await assert.rejects(db.query('select public.save_site_sections($1,$2)',[patch,revision]),/Section access denied/);
+  for(const patch of [{stays:[]},{permissions:['users']},{contact:{url:'changed'}},{website:{enabled:true,name:'Blocked'}}])await assert.rejects(db.query('select public.save_site_sections($1,$2)',[patch,revision]),/Section access denied/);
   const saved=await db.query('select public.save_site_sections($1,$2) as result',[{profile:{name:'Allowed'}},revision]);
   assert.equal(saved.rows[0].result.payload.profile.name,'Allowed');assert.equal(saved.rows[0].result.payload.stays[0].title,'Keep');
   await assert.rejects(db.query('select public.save_site_sections($1,$2)',[{profile:{name:'Stale'}},revision]),/Content changed/);
@@ -53,5 +53,7 @@ test('PostgreSQL enforces section permissions, native-only management and revoca
   await user(editor);revision=(await db.query('select updated_at::text as revision from public.site_content')).rows[0].revision;
   await assert.rejects(db.query('select public.save_site_sections($1,$2)',[{profile:{name:'Disabled'}},revision]),/Section access denied/);
   await assert.rejects(db.query('insert into storage.objects(bucket_id,name) values($1,$2)',['site-images','images/profile/disabled.png']),/row-level security/);
+  await user(native);revision=(await db.query('select updated_at::text as revision from public.site_content')).rows[0].revision;
+  const website=await db.query('select public.save_site_sections($1,$2) as result',[{website:{enabled:true,name:'Native site'}},revision]);assert.equal(website.rows[0].result.payload.website.name,'Native site');assert.equal(website.rows[0].result.payload.profile.name,'Allowed');
  }finally{await db.close();}
 });

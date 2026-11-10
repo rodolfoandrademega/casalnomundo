@@ -2,7 +2,19 @@
 
 Link page estática com painel de edição e relatórios. Em produção, o conteúdo, o login administrativo e os eventos de analytics usam Supabase. A Vercel serve os arquivos estáticos e `/api/config`.
 
-## Supabase
+## Editor de Site
+
+O menu **Site** abre um editor exclusivo dos acessos nativos. Outros membros veem **Em breve**, com a opção desativada; a função `save_site_sections` também bloqueia a gravação de `website` por não nativos no banco. Não foi criada uma permissão delegável para esta etapa.
+
+Clique em **Criar meu site** para iniciar. O site deste projeto fica em **`/site`**, separado da MegaBio em `/`. Edite identidade, título da aba, apresentação, capa, tema claro/escuro, cor, sobre e contato. Adicione seções de hospedagens, destinos, outras ofertas ou personalizadas. Cada indicação tem título, localização, descrição, imagem com upload, preço e condição, diferenciais, selo, texto/link do botão e datas opcionais de exibição. As datas usam Recife. Busca e filtros funcionam no site publicado e ignoram diferenças de acentos.
+
+A prévia visual mostra o rascunho. **Salvar site** grava somente `website`, preservando alterações pendentes da MegaBio. Para disponibilizar o conteúdo em `/site`, marque **Publicar o site** e salve. Desmarcar a publicação preserva o conteúdo e exibe uma página de novidades em breve. Use **Indicação ativa** e **Exibir esta seção** para ocultar e reativar itens, sem exclusão definitiva. Itens futuros, vencidos ou arquivados não aparecem; blocos vazios são omitidos. Os links levam aos canais externos cadastrados, sem sistema de reservas ou pagamentos próprio.
+
+É um site compartilhado por este projeto, administrado pelos nativos, sem provisionamento de sites separados por usuário ou domínio nesta versão. Os campos devem conter somente informações públicas: `website` fica no payload público existente de `site_content`. As configurações antigas da MegaBio não são alteradas. Não exige SQL novo; utiliza o Supabase e o armazenamento já configurados. A publicação do código não cria ofertas nem ativa o site automaticamente.
+
+Verificação: `JSDOM_MODULE=/caminho/node_modules/jsdom node --test tests/website.test.cjs tests/panel-mobile.test.cjs`; autorização no banco: `PGLITE_MODULE=/caminho/node_modules/@electric-sql/pglite node --test tests/access-db.test.cjs`.
+
+## Configuração do Supabase
 
 1. Crie um projeto no Supabase.
 2. Abra **SQL Editor**, execute todo o arquivo [`supabase/schema.sql`](supabase/schema.sql) e depois [`supabase/storage.sql`](supabase/storage.sql) para ativar o envio de imagens.

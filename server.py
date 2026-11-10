@@ -61,6 +61,10 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_header("Location", "/admin")
             self.end_headers()
             return
+        if route in ("/site", "/site/"):
+            self.path = "/site.html"
+            super().do_GET()
+            return
         if route == "/admin":
             self.path = "/painel.html"
             super().do_GET()
@@ -213,7 +217,7 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json({"error": "not found"}, 404)
             return
         try:
-            content = self.read_body(250_000)
+            content = self.read_body(2_000_000)
             if not isinstance(content, dict) or not isinstance(content.get("profile"), dict):
                 raise ValueError("invalid content")
             serialized = json.dumps(content, ensure_ascii=False, indent=2) + "\n"
