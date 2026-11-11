@@ -225,3 +225,11 @@ A identidade do Casal no Mundo fica em `assets/brand/`: logo horizontal no paine
 As páginas carregam manifests próprios: site (`/site`), MegaBio (`/`) e painel (`/admin`), com identidades de aplicativo diferentes. **Instalar app** usa o convite nativo quando o navegador disponibiliza `beforeinstallprompt`; nos demais casos apresenta instruções, incluindo Safari no iPhone. O botão não aparece no aplicativo já instalado nem na prévia do site.
 
 O service worker usa a rede para as navegações e só guarda a página pública de aviso offline e seu ícone. Não armazena páginas do painel, conteúdos publicados, respostas de API ou arquivos privados. O aplicativo precisa de conexão para consultar e editar dados. As vendas e permissões existentes não são alteradas.
+
+## Zerar relatórios (somente nativos)
+
+Em **Visão geral** ou **Relatórios**, acessos nativos conectados ao Supabase podem usar **Zerar relatórios**. A confirmação exige digitar `ZERAR RELATORIOS` e informa que apaga o histórico de todos os períodos, incluindo visitas, cliques, exibições e regiões. Novos eventos continuam entrando; conteúdos, usuários, lixeira e atividades são preservados. A função não está disponível no modo local.
+
+`POST /api/reset-reports` exige JWT válido e confirma `is_site_admin` com o token do próprio usuário antes de usar a chave de servidor. O alvo é fixo (`site_events`) e o limite de data é definido no servidor. Havendo a tabela `site_activity`, registra o autor da limpeza. Usa a mesma `SUPABASE_SECRET_KEY`/`SUPABASE_SERVICE_ROLE_KEY` de servidor dos cadastros, sem nova migração SQL. Uma falha de conexão após enviar a solicitação pode deixar o resultado incerto: atualize o relatório antes de repetir.
+
+O botão **Instalar app** foi removido da MegaBio. No painel e no site, recebeu área de toque e contraste maiores no mobile. Os manifests e a instalação pelo menu do navegador permanecem disponíveis.

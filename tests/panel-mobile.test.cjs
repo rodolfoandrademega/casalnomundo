@@ -69,7 +69,7 @@ test('backdrop closes the drawer and JSON actions collapse after selection',{ski
 async function panelSession(options){
  const result=fixture(),{window}=result;const analyticsReads=[];result.analyticsReads=analyticsReads;
  window.structuredClone=structuredClone;window.fetch=async()=>({ok:false});
- for(const file of ['defaults.js','permissions.js','image-upload.js','profile-design.js','megabio-analytics.js','website-model.js','premium-preview.js','premium-editor.js','website-editor.js','panel-records.js','native-center.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
+ for(const file of ['defaults.js','permissions.js','image-upload.js','profile-design.js','megabio-analytics.js','website-model.js','premium-preview.js','premium-editor.js','website-editor.js','panel-records.js','native-center.js','report-reset.js'])window.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
  window.CNM_USERS={mount:async()=>{}};
  if(options.mapError)window.L={map(){throw new Error('Map container is not measurable');}};
  window.CNM_SUPABASE_CLIENT={rpc:(name,args)=>({then(resolve){return Promise.resolve(options.rpc?options.rpc(name,args):{error:{code:'PGRST202'}}).then(resolve)}}),auth:{getSession:async()=>({data:{session:{user:{id:'test-id'}}}})},from(table){return {
@@ -249,4 +249,9 @@ test('menu pages use one page heading while retaining filters and content action
   assert(f.node('analytics-period'));assert(f.node('refresh-overview'));assert(f.node('refresh-report'));assert(doc.querySelector('[data-record-add="stays"]'));assert(doc.querySelector('[data-record-search="stays"]'));assert(doc.querySelector('.collection-summary .collection-count'));
   f.window.eval(fs.readFileSync(path.join(__dirname,'../user-management.js'),'utf8'));await f.window.CNM_USERS.mount({client:f.window.CNM_SUPABASE_CLIENT,native:true,canCreate:true,container:f.node('view-users')});assert.equal(f.node('view-users').querySelector('h2'),null);assert(f.node('create-member-form'));
  }finally{f.dom.window.close();}
+});
+
+test('report reset controls are exclusive to connected native accounts and MegaBio has no install button',{skip:!enabled},async()=>{
+ for(const native of [false,true]){const f=await panelSession({native,permissions:['reports']});try{assert.equal(f.window.document.querySelectorAll('[data-reset-reports]').length,2);for(const button of f.window.document.querySelectorAll('[data-reset-reports]'))assert.equal(button.hidden,!native);}finally{f.dom.window.close();}}
+ const {JSDOM}=require(process.env.JSDOM_MODULE),d=new JSDOM(fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'));try{assert.equal(d.window.document.querySelector('[data-install-app]'),null);}finally{d.window.close();}
 });
