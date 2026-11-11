@@ -1,0 +1,1 @@
+module.exports=function handler(req,res){res.setHeader('Cache-Control','no-store');if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'Método não permitido.'});}return res.status(503).json({code:'SALES_NOT_ENABLED',error:'As vendas ainda não estão disponíveis. Nenhum pagamento foi iniciado.'});};

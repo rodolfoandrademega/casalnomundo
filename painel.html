@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/button-design.css?v=image-guidance-20261109">
-  <link rel="stylesheet" href="/website-editor.css?v=site-builder-20261110">
+  <link rel="stylesheet" href="/website-editor.css?v=travel-portal-20261111">
   <style>
     :root{--orange:#ca552b;--ink:#25372e;--muted:#737d72;--line:#e3e5dc;--bg:#faf9f6;--soft:#f7f8f3;--green:#202d29}
     *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,sans-serif}button,input,textarea{font-family:inherit}button,a,input,textarea{-webkit-tap-highlight-color:transparent}
@@ -170,6 +170,7 @@
       <section class="view" id="view-trash"></section>
       <section class="view" id="view-activity"></section>
       <section class="view" id="view-website"></section>
+      <section class="view" id="view-media"></section>
       <section class="view" id="view-users"></section>
       <section class="view" id="view-profile"></section>
       <section class="view" id="view-stay"></section>
@@ -195,8 +196,10 @@
   <script src="defaults.js"></script>
   <script src="image-upload.js"></script>
   <script src="profile-design.js?v=image-guidance-20261109"></script>
-  <script src="website-model.js?v=site-builder-20261110"></script>
-  <script src="website-editor.js?v=site-builder-20261110"></script>
+  <script src="website-model.js?v=travel-portal-20261111"></script>
+  <script src="premium-preview.js?v=travel-portal-20261111"></script>
+  <script src="premium-editor.js?v=travel-portal-20261111"></script>
+  <script src="website-editor.js?v=travel-portal-20261111"></script>
   <script src="panel-records.js?v=image-guidance-20261109"></script>
   <script src="native-center.js"></script>
   <script src="permissions.js"></script>
@@ -228,7 +231,7 @@
   (()=>{
     const KEY='cnm.pageData.v1';let defaults,data,dirty=false,map,supabaseClient=null,supabaseAdmin=false;
     let panelAccess=window.CNM_PERMISSIONS.access(),baseline={},contentRevision=null,managementReady=false,contentBusy=false,lastSaveError='';
-    const titles={website:['Site','Crie seu site de hospedagens, destinos e ofertas.'],trash:['Lixeira','Conteúdos preservados para consulta e recuperação por acessos nativos.'],activity:['Acessos e atividades','Histórico de acessos, alterações e recuperações no painel.'],users:['Usuários e permissões','Cadastre pessoas e defina o acesso de cada uma.'],overview:['Visão geral','Gerencie os conteúdos e veja o desempenho dos links.'],profile:['Perfil e aparência','Personalize sua MegaBio, do nome às cores e à capa.'],stay:['Hospedagens','Adicione e edite várias hospedagens.'],destinations:['Destinos','Adicione, remova e reorganize os lugares recomendados.'],products:['Produtos','Gerencie vários produtos e links de compra.'],highlights:['Destaques','Crie chamadas visuais para links importantes.'],socials:['Redes e contato','Gerencie seus perfis e o contato comercial.'],reports:['Relatórios','Acompanhe cliques e regiões compartilhadas.']};
+    const titles={media:['Acervo autoral','Fotos e vídeos com originais privados e prévias protegidas.'],website:['Site','Crie seu site de hospedagens, destinos e ofertas.'],trash:['Lixeira','Conteúdos preservados para consulta e recuperação por acessos nativos.'],activity:['Acessos e atividades','Histórico de acessos, alterações e recuperações no painel.'],users:['Usuários e permissões','Cadastre pessoas e defina o acesso de cada uma.'],overview:['Visão geral','Gerencie os conteúdos e veja o desempenho dos links.'],profile:['Perfil e aparência','Personalize sua MegaBio, do nome às cores e à capa.'],stay:['Hospedagens','Adicione e edite várias hospedagens.'],destinations:['Destinos','Adicione, remova e reorganize os lugares recomendados.'],products:['Produtos','Gerencie vários produtos e links de compra.'],highlights:['Destaques','Crie chamadas visuais para links importantes.'],socials:['Redes e contato','Gerencie seus perfis e o contato comercial.'],reports:['Relatórios','Acompanhe cliques e regiões compartilhadas.']};
     const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const dashboard=window.CNM_ANALYTICS.dashboard(document.getElementById('view-overview'),{onRefresh:()=>refreshReport(),onPeriodChange:()=>refreshReport(),canEdit:section=>panelAccess.can(section)});
     let analyticsRequest=0;
@@ -241,7 +244,8 @@
     const field=(label,path,value,wide=false,area=false)=>(path.endsWith('.image')||path==='profile.video')?imageField(path,value):`<div class="field${wide?' full':''}"><label for="field-${esc(path)}">${esc(label)}</label>${area?`<textarea id="field-${esc(path)}" data-path="${esc(path)}">${esc(value)}</textarea>`:`<input id="field-${esc(path)}" data-path="${esc(path)}" value="${esc(value)}">`}</div>`;
     let uploadingImage=false;
     const records=window.CNM_RECORDS.create({main:document.querySelector('.main'),getData:()=>data,can:section=>panelAccess.can(section),mediaField:(...args)=>imageField(...args),previewMedia:(...args)=>updateImagePreview(...args),onCommit:commitRecord,onDelete:trashRecord,isBusy:()=>uploadingImage||contentBusy,notify,renderContact:()=>renderFields('contact-fields',[['Texto do botão','contact.label',data.contact.label],['URL','contact.url',data.contact.url,true]])});
-    const websiteEditor=window.CNM_WEBSITE_EDITOR.create({container:document.getElementById('view-website'),getData:()=>data,isNative:()=>panelAccess.native,onChange:site=>{if(panelAccess.native){data.website=site;markDirty();}},onSave:()=>save(['website']),mediaField:(...args)=>imageField(...args),isBusy:()=>uploadingImage||contentBusy,notify});
+    const premiumEditor=window.CNM_PREMIUM_EDITOR.create({container:document.getElementById('view-media'),getClient:()=>supabaseClient,isNative:()=>panelAccess.native,getData:()=>data,notify});
+    const websiteEditor=window.CNM_WEBSITE_EDITOR.create({onManageMedia:()=>setView('media'),container:document.getElementById('view-website'),getData:()=>data,isNative:()=>panelAccess.native,onChange:site=>{if(panelAccess.native){data.website=site;markDirty();}},onSave:()=>save(['website']),mediaField:(...args)=>imageField(...args),isBusy:()=>uploadingImage||contentBusy,notify});
     const nativeCenter=window.CNM_NATIVE_CENTER.create({getClient:()=>supabaseClient,isNative:()=>panelAccess.native,onRestore:restoreRecord,onMetrics:trashMetrics,notify});
 
     function updateImagePreview(editor,value){const media=editor.querySelector('[data-image-preview],[data-video-preview]'),url=window.CNM_IMAGES.previewUrl(value);media.hidden=!url;if(url)media.src=url;else media.removeAttribute('src');media.parentElement.classList.toggle('is-empty',!url);editor.querySelector('[data-clear-image]').hidden=!value;if(editor.dataset.imageEditor.startsWith('profile.'))paintProfile();}
@@ -273,7 +277,7 @@
     });
     const box=(title,id)=>`<div class="card"><h3>${title}</h3><div id="${id}"></div></div>`;
     const renderFields=(id,fields)=>document.getElementById(id).innerHTML=fields.map(f=>field(...f)).join('');
-    function setView(name){if(!panelAccess.can(name)||!titles[name])return;if(name!=='reports')disposeMap();document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));document.querySelectorAll('.menu button').forEach(b=>{b.classList.toggle('active',b.dataset.view===name);b.setAttribute('aria-current',b.dataset.view===name?'page':'false');});document.getElementById('page-title').textContent=titles[name][0];document.getElementById('page-lead').textContent=titles[name][1];window.CNM_MOBILE.sectionChanged(titles[name][0]);if(name==='reports')refreshReport();if(name==='website')websiteEditor.render();else websiteEditor.clear();if(name==='trash'||name==='activity')nativeCenter.open(name);}
+    function setView(name){if(!panelAccess.can(name)||!titles[name])return;if(name!=='reports')disposeMap();document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));document.querySelectorAll('.menu button').forEach(b=>{b.classList.toggle('active',b.dataset.view===name);b.setAttribute('aria-current',b.dataset.view===name?'page':'false');});document.getElementById('page-title').textContent=titles[name][0];document.getElementById('page-lead').textContent=titles[name][1];window.CNM_MOBILE.sectionChanged(titles[name][0]);if(name==='reports')refreshReport();if(name==='website')websiteEditor.render();else websiteEditor.clear();if(name==='media')premiumEditor.render();else premiumEditor.clear();if(name==='trash'||name==='activity')nativeCenter.open(name);}
     function render(){
       document.querySelector('.sidebar-profile strong').textContent=data.profile.name||'MegaBio';document.querySelector('.sidebar-profile span').textContent=panelAccess.native?'Acesso nativo':'Acesso por permissões';
       document.getElementById('view-profile').innerHTML=`<div class="view-title profile-title"><div><span class="profile-step">Identidade da MegaBio</span><h2>Uma página com a sua personalidade.</h2><p>Nome, aparência e uma capa que conta sua história.</p></div></div><div class="profile-workspace"><div class="profile-editor"><div class="card"><div class="editor-card-heading"><span class="editor-step">01</span><div><h3>Informações do perfil</h3><p>Como sua marca aparece na MegaBio.</p></div></div><div id="profile-fields"></div><p class="hint">O título da aba é independente do nome do perfil. Alterar um não modifica o outro.</p></div><div class="card"><div class="editor-card-heading"><span class="editor-step">02</span><div><h3>Sua imagem de apresentação</h3><p>Escolha uma foto ou conte sua história em vídeo.</p></div></div><fieldset class="cover-options"><legend class="sr-only">Formato da capa</legend><label><input type="radio" name="cover-type" data-path="profile.heroType" value="image" ${data.profile.heroType!=='video'?'checked':''}><span><strong>Imagem</strong><small>Uma foto que representa você</small></span></label><label><input type="radio" name="cover-type" data-path="profile.heroType" value="video" ${data.profile.heroType==='video'?'checked':''}><span><strong>Vídeo</strong><small>Movimento, com controle de play</small></span></label></fieldset><div data-video-field ${data.profile.heroType==='video'?'':'hidden'}>${imageField('profile.video',data.profile.video)}</div>${imageField('profile.image',data.profile.image)}<p class="hint">No modo vídeo, a imagem aparece antes do play e como alternativa se o vídeo não carregar. O vídeo não toca automaticamente.</p></div><div class="card"><div class="editor-card-heading"><span class="editor-step">03</span><div><h3>Paleta de cores</h3><p>Comece com uma combinação ou escolha cada cor.</p></div></div>${window.CNM_PROFILE.colorFields(data.profile)}</div><div class="card"><div class="editor-card-heading"><span class="editor-step">04</span><div><h3>Seções da MegaBio</h3><p>Escolha o que aparece e personalize os títulos.</p></div></div>${window.CNM_PROFILE.sectionFields(data.profile)}</div></div><aside class="profile-live-preview" aria-label="Prévia da MegaBio">${window.CNM_PROFILE.previewMarkup()}</aside></div>`;
@@ -301,7 +305,7 @@
       ['click-table','section-table'].forEach(id=>document.getElementById(id).innerHTML='<tr><td colspan="2">Relatórios indisponíveis. Tente atualizar novamente.</td></tr>');
       document.getElementById('location-list').textContent='';disposeMap();
     }
-    function showLogin(message=''){records.closeOnLogout();nativeCenter.clear();websiteEditor.clear();managementReady=false;analyticsRequest++;dashboard.fail();clearReport();window.CNM_MOBILE.close({restoreFocus:false});panelAccess=window.CNM_PERMISSIONS.access();supabaseAdmin=false;document.body.classList.add('auth-pending');document.getElementById('login-wall').hidden=false;document.getElementById('login-error').textContent=message;}
+    function showLogin(message=''){records.closeOnLogout();nativeCenter.clear();websiteEditor.clear();premiumEditor.clear();managementReady=false;analyticsRequest++;dashboard.fail();clearReport();window.CNM_MOBILE.close({restoreFocus:false});panelAccess=window.CNM_PERMISSIONS.access();supabaseAdmin=false;document.body.classList.add('auth-pending');document.getElementById('login-wall').hidden=false;document.getElementById('login-error').textContent=message;}
     function openPanel(){document.body.classList.remove('auth-pending');document.getElementById('login-wall').hidden=true;document.getElementById('login-password').value='';}
     let localMode=false;
     const isLocal=['localhost','127.0.0.1','[::1]'].includes(location.hostname);

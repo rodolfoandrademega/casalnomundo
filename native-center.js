@@ -1,6 +1,6 @@
 (() => {
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const labels={stays:'Hospedagens',destinations:'Destinos',products:'Produtos',product_links:'Lojas de produtos',highlights:'Destaques',socials:'Redes sociais',profile:'Perfil',contact:'Contato',panel:'Painel',users:'Usuários'};
+  const labels={premium_media:'Acervo autoral',stays:'Hospedagens',destinations:'Destinos',products:'Produtos',product_links:'Lojas de produtos',highlights:'Destaques',socials:'Redes sociais',profile:'Perfil',contact:'Contato',panel:'Painel',users:'Usuários'};
   const actions={access:'Acesso ao painel',create:'Cadastro criado',edit:'Conteúdo editado',trash:'Movido para a lixeira',restore:'Conteúdo recuperado',permissions:'Permissões alteradas'};
   const displayValue=value=>Array.isArray(value)?value.map(item=>item&&typeof item==='object'?[item.title,item.label,item.url].filter(Boolean).join(' · '):String(item)).join(' · '):value&&typeof value==='object'?Object.entries(value).filter(([key])=>!key.startsWith('_')).map(([key,item])=>key+': '+String(item)).join(' · '):String(value??'');
   const date=value=>new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Recife'}).format(new Date(value));
