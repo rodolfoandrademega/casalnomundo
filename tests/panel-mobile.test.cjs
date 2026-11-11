@@ -218,8 +218,20 @@ test('native builder adds and archives offers with section-specific image upload
  const f=await panelSession({native:true,content:original,rpc(name,args){if(name==='save_site_sections'){patches.push(args.patch);return {data:{payload:{...original,...args.patch},updated_at:'2026-11-10T16:00:00Z'}};}return {data:null};}});try{
   f.node('website-menu').click();f.window.document.querySelector('[data-website-create]').click();f.window.document.querySelector('[data-website-add-offer="0"]').click();
   const set=(path,value)=>{const input=f.window.document.querySelector('[data-website-path="'+path+'"]');if(input.type==='checkbox')input.checked=value;else input.value=value;input.dispatchEvent(new f.window.Event('input',{bubbles:true}));};
-  set('sections.0.items.0.title','Pousada nova');set('sections.0.items.0.url','https://example.com/pousada');set('sections.0.items.0.price','R$ 350');set('sections.0.items.0.active',false);set('enabled',true);
+  set('sections.0.items.'+original.stays.length+'.title','Pousada nova');set('sections.0.items.'+original.stays.length+'.url','https://example.com/pousada');set('sections.0.items.'+original.stays.length+'.price','R$ 350');set('sections.0.items.'+original.stays.length+'.active',false);set('enabled',true);
   assert.equal(f.window.document.querySelector('[data-upload-path="website.sections.0.items.0.image"]').dataset.imageSection,'stay');assert.equal(f.window.document.querySelector('[data-upload-path="website.heroImage"]').dataset.imageSection,'profile');
-  f.window.document.querySelector('[data-website-save]').click();await new Promise(setImmediate);assert.equal(patches[0].website.enabled,true);assert.equal(patches[0].website.sections[0].items[0].title,'Pousada nova');assert.equal(patches[0].website.sections[0].items[0].active,false);assert.equal(patches[0].website.sections[0].items[0].price,'R$ 350');
+  f.window.document.querySelector('[data-website-save]').click();await new Promise(setImmediate);assert.equal(patches[0].website.enabled,true);assert.equal(patches[0].website.sections[0].items[original.stays.length].title,'Pousada nova');assert.equal(patches[0].website.sections[0].items[original.stays.length].active,false);assert.equal(patches[0].website.sections[0].items[original.stays.length].price,'R$ 350');
+ }finally{f.dom.window.close();}
+});
+
+test('native appearance controls preserve content on reset and interactive preview stores the current draft',{skip:!enabled},async()=>{
+ const content=JSON.parse(fs.readFileSync(path.join(__dirname,'../conteudo.json'),'utf8'));content.website={enabled:false,heroTitle:'Título preservado',sections:[]};
+ const f=await panelSession({native:true,content});try{
+  f.node('website-menu').click();const q=selector=>f.window.document.querySelector(selector),set=(path,value)=>{const field=q('[data-website-path="'+path+'"]');field.value=value;field.dispatchEvent(new f.window.Event('input',{bubbles:true}));};
+  assert.equal(q('[data-website-path="accent"]').value,'#ff6b2b');assert.equal(q('[data-website-path="sections.0.items.0.title"]').value,content.stays[0].title);
+  set('background','#e0e0e0');set('heroLayout','split');set('typeface','editorial');
+  const preview=q('[data-website-preview]');preview.dispatchEvent(new f.window.MouseEvent('click',{bubbles:true,cancelable:true}));let draft=JSON.parse(f.window.localStorage.getItem(f.window.CNM_WEBSITE.PREVIEW_KEY));assert.equal(draft.site.background,'#e0e0e0');assert.equal(draft.site.heroLayout,'split');assert.equal(draft.site.typeface,'editorial');assert.equal(draft.site.enabled,false);
+  const items=JSON.stringify(draft.site.sections);q('[data-website-travel-preset]').click();assert.equal(q('[data-website-path="background"]').value,'#ffffff');assert.equal(q('[data-website-path="heroTitle"]').value,'Título preservado');
+  q('[data-website-preview]').dispatchEvent(new f.window.MouseEvent('click',{bubbles:true,cancelable:true}));draft=JSON.parse(f.window.localStorage.getItem(f.window.CNM_WEBSITE.PREVIEW_KEY));assert.equal(JSON.stringify(draft.site.sections),items);assert.equal(draft.site.heroLayout,'panorama');
  }finally{f.dom.window.close();}
 });

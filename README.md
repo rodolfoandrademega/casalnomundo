@@ -209,3 +209,11 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 A validação de DOM de prévia, título independente, restauração de paleta e comportamento mobile usa `JSDOM_MODULE=/caminho/node_modules/jsdom node --test tests/profile-design.test.cjs tests/panel-mobile.test.cjs tests/megabio-dashboard.test.cjs`.
+
+## Identidade do site de viagens
+
+O **Admin → Site**, exclusivo dos nativos, oferece a identidade branca, laranja e preta, com capa fotográfica, busca e categorias de viagens. Na primeira abertura de um site da versão anterior, prepara um **rascunho** com as indicações existentes da MegaBio e as categorias de passeios, lugares, combos, gastronomia e lojas. Não ativa a publicação automaticamente. Cadastros importados com links inválidos ficam desativados para revisão; links e imagens inválidos não são propagados.
+
+As opções de aparência são independentes da MegaBio: destaque, fundo, texto, cards, fundo do acervo, fonte dos títulos, capa panorâmica ou dividida e altura da capa. **Restaurar identidade branca, laranja e preta** altera somente a aparência, preservando textos e indicações. Tudo é persistido no campo `website` pelo fluxo de salvamento existente; não há nova migração SQL.
+
+**Prévia interativa** guarda temporariamente o rascunho público neste navegador por 15 minutos. `/site?preview=1` só o utiliza após confirmar o administrador nativo, e mantém `noindex`. Visitantes veem apenas o conteúdo salvo/publicado. O rascunho temporário é removido ao sair da sessão. Use **Salvar site** para persistir e **Publicar o site em /site** para torná-lo público. O acervo mantém originais privados e vendas desativadas.

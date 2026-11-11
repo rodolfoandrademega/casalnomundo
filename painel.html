@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/button-design.css?v=image-guidance-20261109">
-  <link rel="stylesheet" href="/website-editor.css?v=travel-portal-20261111">
+  <link rel="stylesheet" href="/website-editor.css?v=travel-brand-20261111">
   <style>
     :root{--orange:#ca552b;--ink:#25372e;--muted:#737d72;--line:#e3e5dc;--bg:#faf9f6;--soft:#f7f8f3;--green:#202d29}
     *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,sans-serif}button,input,textarea{font-family:inherit}button,a,input,textarea{-webkit-tap-highlight-color:transparent}
@@ -196,10 +196,10 @@
   <script src="defaults.js"></script>
   <script src="image-upload.js"></script>
   <script src="profile-design.js?v=image-guidance-20261109"></script>
-  <script src="website-model.js?v=travel-portal-20261111"></script>
-  <script src="premium-preview.js?v=travel-portal-20261111"></script>
-  <script src="premium-editor.js?v=travel-portal-20261111"></script>
-  <script src="website-editor.js?v=travel-portal-20261111"></script>
+  <script src="website-model.js?v=travel-brand-20261111"></script>
+  <script src="premium-preview.js?v=travel-brand-20261111"></script>
+  <script src="premium-editor.js?v=travel-brand-20261111"></script>
+  <script src="website-editor.js?v=travel-brand-20261111"></script>
   <script src="panel-records.js?v=image-guidance-20261109"></script>
   <script src="native-center.js"></script>
   <script src="permissions.js"></script>
@@ -305,7 +305,7 @@
       ['click-table','section-table'].forEach(id=>document.getElementById(id).innerHTML='<tr><td colspan="2">Relatórios indisponíveis. Tente atualizar novamente.</td></tr>');
       document.getElementById('location-list').textContent='';disposeMap();
     }
-    function showLogin(message=''){records.closeOnLogout();nativeCenter.clear();websiteEditor.clear();premiumEditor.clear();managementReady=false;analyticsRequest++;dashboard.fail();clearReport();window.CNM_MOBILE.close({restoreFocus:false});panelAccess=window.CNM_PERMISSIONS.access();supabaseAdmin=false;document.body.classList.add('auth-pending');document.getElementById('login-wall').hidden=false;document.getElementById('login-error').textContent=message;}
+    function showLogin(message=''){records.closeOnLogout();nativeCenter.clear();websiteEditor.clear();premiumEditor.clear();try{localStorage.removeItem(window.CNM_WEBSITE.PREVIEW_KEY);}catch(_){}managementReady=false;analyticsRequest++;dashboard.fail();clearReport();window.CNM_MOBILE.close({restoreFocus:false});panelAccess=window.CNM_PERMISSIONS.access();supabaseAdmin=false;document.body.classList.add('auth-pending');document.getElementById('login-wall').hidden=false;document.getElementById('login-error').textContent=message;}
     function openPanel(){document.body.classList.remove('auth-pending');document.getElementById('login-wall').hidden=true;document.getElementById('login-password').value='';}
     let localMode=false;
     const isLocal=['localhost','127.0.0.1','[::1]'].includes(location.hostname);
