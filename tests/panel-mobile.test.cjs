@@ -235,3 +235,18 @@ test('native appearance controls preserve content on reset and interactive previ
   q('[data-website-preview]').dispatchEvent(new f.window.MouseEvent('click',{bubbles:true,cancelable:true}));draft=JSON.parse(f.window.localStorage.getItem(f.window.CNM_WEBSITE.PREVIEW_KEY));assert.equal(JSON.stringify(draft.site.sections),items);assert.equal(draft.site.heroLayout,'panorama');
  }finally{f.dom.window.close();}
 });
+
+test('menu pages use one page heading while retaining filters and content actions',{skip:!enabled},async()=>{
+ const f=await panelSession({native:true});try{
+  const doc=f.window.document;
+  for(const view of ['overview','profile','stay','destinations','products','highlights','socials','reports','website','trash','activity','media']){
+   if(view==='media')f.node('website-menu').click();
+   doc.querySelector(view==='media'?'[data-website-media]':'[data-view="'+view+'"]').click();await new Promise(setImmediate);
+   assert(f.node('page-title').textContent.trim());assert(f.node('page-lead').textContent.trim());
+   assert.equal(doc.querySelectorAll('#view-'+view+' > .view-title h2, #view-'+view+' > .collection-heading h2, #view-'+view+' > .website-toolbar h2, #view-'+view+' > .dashboard-heading h2').length,0,view);
+  }
+  assert.equal(doc.querySelector('.page-eyebrow'),null);assert.equal(doc.querySelector('#view-profile > .profile-title'),null);
+  assert(f.node('analytics-period'));assert(f.node('refresh-overview'));assert(f.node('refresh-report'));assert(doc.querySelector('[data-record-add="stays"]'));assert(doc.querySelector('[data-record-search="stays"]'));assert(doc.querySelector('.collection-summary .collection-count'));
+  f.window.eval(fs.readFileSync(path.join(__dirname,'../user-management.js'),'utf8'));await f.window.CNM_USERS.mount({client:f.window.CNM_SUPABASE_CLIENT,native:true,canCreate:true,container:f.node('view-users')});assert.equal(f.node('view-users').querySelector('h2'),null);assert(f.node('create-member-form'));
+ }finally{f.dom.window.close();}
+});
