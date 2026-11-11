@@ -220,7 +220,7 @@ As opções de aparência são independentes da MegaBio: destaque, fundo, texto,
 
 ## Logo e instalação como aplicativo
 
-A identidade do Casal no Mundo fica em `assets/brand/`: logo horizontal no painel/login, MegaBio e site; símbolo sem lettering nos favicons e ícones da tela inicial. `brand.css` mantém a logo legível em fundos claros e escuros. Os ícones PNG incluem 192/512 px, versão maskable com margem de segurança e Apple Touch Icon de 180 px.
+A identidade do Casal no Mundo fica em `assets/brand/`: logo horizontal no painel/login, MegaBio e site; símbolo sem lettering nos favicons e ícones da tela inicial. `brand.css` mantém a logo sem caixa de fundo: versão branca no painel e versão escura no site claro. Na MegaBio, a logo aparece no fim da página, acima do crédito da Mega Agencia, com crédito reduzido no mobile. Os ícones PNG incluem 192/512 px, versão maskable com margem de segurança e Apple Touch Icon de 180 px.
 
 As páginas carregam manifests próprios: site (`/site`), MegaBio (`/`) e painel (`/admin`), com identidades de aplicativo diferentes. **Instalar app** usa o convite nativo quando o navegador disponibiliza `beforeinstallprompt`; nos demais casos apresenta instruções, incluindo Safari no iPhone. O botão não aparece no aplicativo já instalado nem na prévia do site.
 
