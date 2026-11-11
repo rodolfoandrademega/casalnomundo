@@ -40,7 +40,7 @@ test('keyboard focus wraps within the drawer and excludes restricted menu option
   window.document.querySelector('[data-view="reports"]').hidden=true;
   node('mobile-menu-toggle').click();
   // The first item is Close; Users and permissions starts hidden by access control.
-  const last=window.document.querySelector('[data-view="socials"]');last.focus();
+  const last=window.document.querySelector('[data-panel-theme-toggle]');last.focus();
   window.document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true}));
   assert.equal(window.document.activeElement,node('mobile-menu-close'));
   window.document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',shiftKey:true,bubbles:true,cancelable:true}));

@@ -233,3 +233,11 @@ Em **Visão geral** ou **Relatórios**, acessos nativos conectados ao Supabase p
 `POST /api/reset-reports` exige JWT válido e confirma `is_site_admin` com o token do próprio usuário antes de usar a chave de servidor. O alvo é fixo (`site_events`) e o limite de data é definido no servidor. Havendo a tabela `site_activity`, registra o autor da limpeza. Usa a mesma `SUPABASE_SECRET_KEY`/`SUPABASE_SERVICE_ROLE_KEY` de servidor dos cadastros, sem nova migração SQL. Uma falha de conexão após enviar a solicitação pode deixar o resultado incerto: atualize o relatório antes de repetir.
 
 O botão **Instalar app** foi removido da MegaBio. No painel e no site, recebeu área de toque e contraste maiores no mobile. Os manifests e a instalação pelo menu do navegador permanecem disponíveis.
+
+## Visibilidade dos itens e tema do painel
+
+As listas de Hospedagens, Destinos, Produtos, Destaques e Redes mostram o status **Visível/Oculto na MegaBio** e uma ação **Ocultar/Ativar**, que salva apenas a seção permitida. O editor também tem a chave **Visível na MegaBio**. Os registros antigos continuam visíveis quando `active` não está definido. Desativar mantém a identidade, os textos, imagens e posição do item; não envia para a lixeira. Links individuais de lojas podem ser ocultados no editor do produto. O contato comercial tem uma chave própria; sua alteração usa o salvamento geral do painel.
+
+A página pública omite itens com `active: false`, inclusive imagens, links e registros de exibição desses itens. Se a seção ficar sem itens visíveis, seu título e atalho de navegação também são ocultados. A ação não apaga dados históricos de relatórios. O Site mantém seu controle independente de ofertas ativas, já disponível no editor. Não há migração SQL adicional.
+
+**Tema escuro** fica no rodapé do menu lateral. É uma preferência local do painel, salva em `cnm.panelTheme.v1` e sincronizada entre abas deste navegador. Inclui formulários, listas, relatórios e diálogos. As cores publicadas da MegaBio e do Site e suas prévias continuam independentes dessa preferência.

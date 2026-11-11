@@ -57,3 +57,11 @@ test('highlight appearance edits the whole card in an isolated draft without add
   window.document.querySelector('[data-record-edit="highlights"]').click();window.document.querySelector('[data-reset-card]').click();assert.equal(node('highlight-card-preview').dataset.cardEffect,'none');assert.equal(data.highlights[0].card.animation,'shine');
  }finally{dom.window.close();}
 });
+
+test('visibility toggles preserve records and do not send items to trash',{skip:!enabled},async()=>{
+ const f=fixture();try{const id=f.data.stays[0]._id;f.window.document.querySelector('[data-record-toggle="stays"]').click();await new Promise(setImmediate);assert.equal(f.data.stays.length,1);assert.equal(f.data.stays[0].active,false);assert.equal(f.data.stays[0]._id,id);assert.equal(f.trash.length,0);assert.equal(f.commits.length,1);assert.match(f.window.document.querySelector('#view-stay .record-visibility').textContent,/Oculto/);f.window.document.querySelector('[data-record-toggle="stays"]').click();await new Promise(setImmediate);assert.equal(f.data.stays[0].active,true);assert.equal(f.data.stays[0].title,'Hospedagem A');}finally{f.dom.window.close();}
+ const denied=fixture({allowed:false});try{denied.window.document.querySelector('[data-record-toggle="stays"]').click();await new Promise(setImmediate);assert.equal(denied.commits.length,0);}finally{denied.dom.window.close();}
+});
+test('item and shop visibility remain isolated drafts until the parent is saved',{skip:!enabled},async()=>{
+ const f=fixture();try{f.window.document.querySelector('[data-record-edit="products"]').click();const product=f.node('record-dialog').querySelector('[data-record-active]'),shop=f.node('record-dialog').querySelector('[data-shop-key="active"]');for(const field of [product,shop]){field.checked=false;field.dispatchEvent(new f.window.Event('input',{bubbles:true}));}assert.equal(f.data.products[0].active,undefined);assert.equal(f.data.products[0].links[0].active,undefined);f.node('record-form').dispatchEvent(new f.window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(setImmediate);assert.equal(f.data.products[0].active,false);assert.equal(f.data.products[0].links[0].active,false);assert.equal(f.data.products[0].links.length,1);assert.equal(f.trash.length,0);}finally{f.dom.window.close();}
+});
