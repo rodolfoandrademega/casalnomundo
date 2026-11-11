@@ -6,3 +6,16 @@
 /* Native report reset and touch-friendly app installation. */
 .report-page-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.reset-reports-trigger{color:#9b4135!important;background:#fff5f3!important;border-color:#edd7d1!important}.reset-reports-dialog{box-sizing:border-box;width:min(480px,calc(100vw - 32px));border:1px solid #e2e5e9;border-radius:16px;padding:28px;background:#fff;color:#243338;font:14px/1.7 Inter,system-ui,sans-serif}.reset-reports-dialog::backdrop{background:#10262c99}.reset-reports-dialog h2{font-size:24px;line-height:1.3;margin:12px 0}.reset-reports-dialog p{color:#647580;font-size:13px}.reset-reports-dialog label{display:block;font-size:12px;margin-top:18px}.reset-reports-dialog input{box-sizing:border-box;width:100%;min-height:48px;margin-top:8px;border:1px solid #cfd9de;border-radius:8px;padding:10px 12px;font-size:16px}.reset-reports-actions{display:flex;gap:10px;margin-top:20px}.reset-reports-actions .button{flex:1;min-height:46px}.reset-reports-actions .danger{background:#a63f32;border-color:#a63f32;color:#fff}.reset-reports-actions .danger:disabled{opacity:.4;cursor:not-allowed}.reset-reports-message:empty{display:none}
 @media(max-width:760px){.workspace-actions .app-install-button{min-height:44px;padding:10px 14px;background:#263b39;color:#fff;border-color:#263b39;border-radius:10px;font-size:12px;gap:8px}.workspace-actions .app-install-button svg{width:19px;height:19px}.ws-footer .app-install-button{min-height:46px;padding:11px 17px;background:var(--ws-accent,#ff6b2b);color:var(--ws-accent-ink,#111);border-color:transparent;border-radius:10px;font-size:12px;gap:9px}.ws-footer .app-install-button svg{width:19px;height:19px}.dashboard-heading.page-actions{justify-content:space-between}.dashboard-heading.page-actions>.reset-reports-trigger{order:2;margin-left:auto}.report-page-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}.report-page-actions .button{min-height:46px;font-size:11px}.reset-reports-dialog{padding:23px}.reset-reports-actions .button{font-size:12px}}
+/* Keep the workspace name and sign-out above the two mobile primary actions. */
+@media(max-width:760px){
+ .workspace-bar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:14px 10px;padding:14px;margin-bottom:24px}
+ .workspace-label{grid-column:1/-1;grid-row:1;min-width:0;padding-right:53px;font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+ .workspace-label b{margin:0 6px}
+ .workspace-actions{display:contents}
+ .workspace-actions .logout{grid-column:2;grid-row:1;justify-self:end;min-height:42px;padding:9px 11px;margin:0;font-size:11px;border-radius:9px}
+ .workspace-actions .app-install-button,.workspace-actions .site-link{box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-width:0;width:100%;min-height:46px;margin:0;padding:11px 8px;border-radius:9px;font-size:11px;line-height:1.4;gap:7px;white-space:nowrap}
+ .workspace-actions .app-install-button{grid-column:1;grid-row:2}
+ .workspace-actions .app-install-button svg{width:17px;height:17px}
+ .workspace-actions .site-link{grid-column:2;grid-row:2;background:#fff;border:1px solid #dce5e5;color:#365653}
+ .workspace-bar:has([data-install-app][hidden]) .site-link{grid-column:1/-1}
+}
