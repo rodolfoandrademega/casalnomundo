@@ -6,16 +6,18 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="description" content="Hospedagem, destinos e links do Casal no Mundo.">
   <title>Casal no Mundo</title>
-  <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/icon-32.png?v=brand-20261111"><link rel="icon" type="image/png" sizes="192x192" href="/assets/brand/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/button-design.css?v=professional-20261109">
   <link rel="stylesheet" href="/megabio.css?v=mobile-footer-20261109">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png"><link rel="manifest" href="/megabio.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Casal no Mundo"><link rel="stylesheet" href="/brand.css?v=brand-20261111">
 </head>
 <body>
   <a class="skip-link" href="#identity">Ir para os links</a>
   <main class="page">
+    <div class="bio-brand"><span class="brand-plate"><img class="brand-wordmark" src="/assets/brand/logo.png" alt="Casal no Mundo" width="180" height="84"></span></div>
     <header class="hero" id="hero" aria-label="Capa da MegaBio" hidden></header>
     <section class="identity" id="identity" tabindex="-1"></section>
     <nav class="bio-navigation" id="bio-navigation" aria-label="Navegar pelas seções da MegaBio" hidden></nav>
@@ -25,7 +27,7 @@
     <section class="section" data-section="Destaques" data-bio-section="highlights" aria-labelledby="highlight-title"><div class="section-heading"><h2 id="highlight-title">Destaques</h2></div><div class="highlight-list" id="highlights"></div></section>
     <section class="section" data-section="Produtos" data-bio-section="products" aria-labelledby="product-title"><div class="section-heading"><h2 id="product-title">Achados para viajar</h2></div><div class="product-list" id="products"></div></section>
     <section class="section" data-section="Redes e contato" data-bio-section="socials" aria-labelledby="social-title"><div class="section-heading"><h2 id="social-title">Continue a viagem</h2><span>Redes e contato</span></div><div class="socials" id="socials"></div><div id="contact"></div></section>
-    <footer>Desenvolvido por <a href="https://megaagencia.com.br" target="_blank" rel="noopener noreferrer">Mega Agencia</a></footer>
+    <div class="bio-install"><button type="button" class="app-install-button" data-install-app aria-label="Instalar Casal no Mundo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></svg><span>Instalar app</span></button></div><footer>Desenvolvido por <a href="https://megaagencia.com.br" target="_blank" rel="noopener noreferrer">Mega Agencia</a></footer>
   </main>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="supabase-bootstrap.js"></script>
@@ -34,5 +36,5 @@
   <script defer src="megabio-analytics.js"></script>
   <script defer src="promotion-observer.js"></script>
   <script defer src="app.js?v=professional-20261109"></script>
-</body>
+<script defer src="/pwa.js?v=brand-20261111"></script></body>
 </html>

@@ -217,3 +217,11 @@ O **Admin → Site**, exclusivo dos nativos, oferece a identidade branca, laranj
 As opções de aparência são independentes da MegaBio: destaque, fundo, texto, cards, fundo do acervo, fonte dos títulos, capa panorâmica ou dividida e altura da capa. **Restaurar identidade branca, laranja e preta** altera somente a aparência, preservando textos e indicações. Tudo é persistido no campo `website` pelo fluxo de salvamento existente; não há nova migração SQL.
 
 **Prévia interativa** guarda temporariamente o rascunho público neste navegador por 15 minutos. `/site?preview=1` só o utiliza após confirmar o administrador nativo, e mantém `noindex`. Visitantes veem apenas o conteúdo salvo/publicado. O rascunho temporário é removido ao sair da sessão. Use **Salvar site** para persistir e **Publicar o site em /site** para torná-lo público. O acervo mantém originais privados e vendas desativadas.
+
+## Logo e instalação como aplicativo
+
+A identidade do Casal no Mundo fica em `assets/brand/`: logo horizontal no painel/login, MegaBio e site; símbolo sem lettering nos favicons e ícones da tela inicial. `brand.css` mantém a logo legível em fundos claros e escuros. Os ícones PNG incluem 192/512 px, versão maskable com margem de segurança e Apple Touch Icon de 180 px.
+
+As páginas carregam manifests próprios: site (`/site`), MegaBio (`/`) e painel (`/admin`), com identidades de aplicativo diferentes. **Instalar app** usa o convite nativo quando o navegador disponibiliza `beforeinstallprompt`; nos demais casos apresenta instruções, incluindo Safari no iPhone. O botão não aparece no aplicativo já instalado nem na prévia do site.
+
+O service worker usa a rede para as navegações e só guarda a página pública de aviso offline e seu ícone. Não armazena páginas do painel, conteúdos publicados, respostas de API ou arquivos privados. O aplicativo precisa de conexão para consultar e editar dados. As vendas e permissões existentes não são alteradas.
